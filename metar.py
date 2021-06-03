@@ -63,7 +63,7 @@ DIM_TIME_START		= datetime.time(19,0)	# Time of day to run at LED_BRIGHTNESS_DIM
 LED_BRIGHTNESS_DIM	= 0.1			# Float from 0.0 (min) to 1.0 (max)
 
 USE_SUNRISE_SUNSET 	= True			# Set to True if instead of fixed times for bright/dimming, you want to use local sunrise/sunset
-LOCATION 		= "Baltimore"		# Nearby city for Sunset/Sunrise timing, refer to https://astral.readthedocs.io/en/latest/#cities for list of cities supported
+LOCATION 		= "Tokyo"		# Nearby city for Sunset/Sunrise timing, refer to https://astral.readthedocs.io/en/latest/#cities for list of cities supported
 
 # ----- External Display support -----
 ACTIVATE_EXTERNAL_METAR_DISPLAY = False		# Set to True if you want to display METAR conditions to a small external display
@@ -129,11 +129,11 @@ print("External Display:" + str(ACTIVATE_EXTERNAL_METAR_DISPLAY))
 pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness = LED_BRIGHTNESS_DIM if (ACTIVATE_DAYTIME_DIMMING and bright == False) else LED_BRIGHTNESS, pixel_order = LED_ORDER, auto_write = False)
 
 # Read the airports file to retrieve list of airports and use as order for LEDs
-with open("/home/pi/METARMap-master/airports") as f:
+with open("/home/pi/METARMap/airports") as f:
 	airports = f.readlines()
 airports = [x.strip() for x in airports]
 try:
-	with open("/home/pi/METARMap-master/displayairports") as f2:
+	with open("/home/pi/METARMap/displayairports") as f2:
 		displayairports = f2.readlines()
 	displayairports = [x.strip() for x in displayairports]
 	print("Using subset airports for LED display")
