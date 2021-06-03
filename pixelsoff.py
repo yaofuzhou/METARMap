@@ -5,7 +5,7 @@ try:
 except ImportError:
 	displaymetar = None
 
-pixels = neopixel.NeoPixel(board.D18, 50)
+pixels = neopixel.NeoPixel(board.D18, 150)
 
 pixels.deinit()
 
