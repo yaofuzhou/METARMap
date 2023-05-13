@@ -139,7 +139,7 @@ The twilight beginning, sunrise, sunset, and twilight ending times are found in 
 The update is done with the **[suntimes.py](suntimes.py)** Python script, which is run automatically by **[run.sh](run.sh)** once a day.
 If **[suntimes.csv](suntimes.csv)** does not already exist in the directory, **[run.sh](run.sh)** will automatically run **[suntimes.py](suntimes.py)** upon starting.
 
-**[suntimes.py](suntimes.py)** requires the latitudes and longitudes of the airports. These coordinates are found in the airport list **[airport.csv](airport.csv)**, which has replaced the file [airport](airport)** in the older versions of METARMap.
+**[suntimes.py](suntimes.py)** requires the latitudes and longitudes of the airports. These coordinates are found in the airport list **[airport.csv](airport.csv)**, which has replaced the file **[airport](airport)** in the older versions of METARMap.
 
 ## Changelist
 
