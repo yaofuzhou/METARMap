@@ -123,6 +123,23 @@ If you want an interactive Legend to illustrate the possible behaviors you can d
   * If you are not using any of these, then you only need 4 LEDs for the basic flight conditions for the Legend
   * If you are only using the Wind condition feature, but not the Lightning, you will still need the total of 7 LEDs (but the 5th LED for Lightning will just stay blank) or you'd have to change the order in the code
 
+## Additional LED dimming functionality according to local twilight beginning, sunrise, sunset, and twilight ending
+This optional functionality allows the brightness of each LED be adjusted according to its local sunlight.
+
+If you want to use this extra functionality, then inside the **[metar.py](metar.py)** file set the **`USE_DYNAMIC_SUNTIME`** parameter to **True**.
+Set the `LED_BRIGHTNESS_DIM` and `LED_BRIGHTNESS_DARK` settings to the level you want to run when dimmed.
+
+For each LED, its brightness is set to 
+* `LED_BRIGHTNESS_DARK` when it is locally before the morning twilight or after the evening twilight;
+* `LED_BRIGHTNESS_DIM` when it is locally before the sunrise or after the sunset but still within morning or evening twilight;
+* Normal brightness when it is locally between sunrise and sunset.
+
+The twilight beginning, sunrise, sunset, and twilight ending times are found in the **[suntimes.csv](suntimes.csv)** file.
+**[suntimes.csv](suntimes.csv)** is updated daily using the API of [sunrise-sunset.org](https://api.sunrise-sunset.org).
+The update is done with the **[suntimes.py](suntimes.py)** Python script, which is run automatically by **[run.sh](run.sh)** once a day.
+If **[suntimes.csv](suntimes.csv)** does not already exist in the directory, **[run.sh](run.sh)** will automatically run **[suntimes.py](suntimes.py)** upon starting.
+
+**[suntimes.py](suntimes.py)** requires the latitudes and longitudes of the airports. These coordinates are found in the airport list **[airport.csv](airport.csv)**, which has replaced the file [airport](airport)** in the older versions of METARMap.
 
 ## Changelist
 
