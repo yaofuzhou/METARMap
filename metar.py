@@ -60,18 +60,17 @@ BLINK_SPEED                      = 1.0              # Float in seconds, e.g. 0.5
 BLINK_TOTALTIME_SECONDS          = 300
 
 # ----- Daytime dimming of LEDs based on time of day or Sunset/Sunrise -----
-ACTIVATE_DAYTIME_DIMMING         = True             # Set to True if you want to dim the map after a certain time of day
+ACTIVATE_DAYTIME_DIMMING         = False             # Set to True if you want to dim the map after a certain time of day
+USE_DYNAMIC_SUNTIME              = True             # Set to True if the brightness of each LED is adjusted according to its local twilight, sunrise, and sunset times.
 BRIGHT_TIME_START                = time(7,0)        # Time of day to run at LED_BRIGHTNESS in hours and minutes
 DIM_TIME_START                   = time(19,0)       # Time of day to run at LED_BRIGHTNESS_DIM in hours and minutes
-LED_BRIGHTNESS_DIM               = 0.316            # Float from 0.0 (min) to 1.0 (max)
-LED_BRIGHTNESS_DARK              = 0.1              # Float from 0.0 (min) to 1.0 (max)
-
 USE_SUNRISE_SUNSET               = False            # Set to True if instead of fixed times for bright/dimming, you want to use local sunrise/sunset
 LOCATION                         = "Baltimore"      # Nearby city for Sunset/Sunrise timing, refer to https://astral.readthedocs.io/en/latest/#cities for list of cities supported
 
-USE_DYNAMIC_SUNTIME              = True             # Set to True if the brightness of each LED is adjusted according to its local twilight, sunrise, and sunset times.
+LED_BRIGHTNESS_DIM               = 0.316            # Float from 0.0 (min) to 1.0 (max)
+LED_BRIGHTNESS_DARK              = 0.1              # Float from 0.0 (min) to 1.0 (max)
 
-# ----- External Display support -----
+ß# ----- External Display support -----
 ACTIVATE_EXTERNAL_METAR_DISPLAY  = False            # Set to True if you want to display METAR conditions to a small external display
 DISPLAY_ROTATION_SPEED           = 5.0              # Float in seconds, e.g 2.0 for two seconds
 
