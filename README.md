@@ -126,6 +126,7 @@ If you want an interactive Legend to illustrate the possible behaviors you can d
 ## Additional LED dimming functionality according to local twilight beginning, sunrise, sunset, and twilight ending
 
 Let's see the result first -
+
 [![Preview](https://img.youtube.com/vi/yhYox__nbXA/0.jpg)](https://www.youtube.com/watch?v=yhYox__nbXA)
 
 
