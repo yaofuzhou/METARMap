@@ -124,6 +124,10 @@ If you want an interactive Legend to illustrate the possible behaviors you can d
   * If you are only using the Wind condition feature, but not the Lightning, you will still need the total of 7 LEDs (but the 5th LED for Lightning will just stay blank) or you'd have to change the order in the code
 
 ## Additional LED dimming functionality according to local twilight beginning, sunrise, sunset, and twilight ending
+
+[![Preview](https://img.youtube.com/vi/qLm3Z9kndZI/0.jpg)](https://www.youtube.com/watch?v=qLm3Z9kndZI)
+
+
 This optional functionality allows the brightness of each LED be adjusted according to its local sunlight.
 
 If you want to use this extra functionality, then inside the **[metar.py](metar.py)** file set the **`USE_DYNAMIC_SUNTIME`** parameter to **True**.
