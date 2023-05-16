@@ -15,8 +15,8 @@ suntimes_has_run_today=false
 while true
 do
   /home/pi/METARMap/refresh.sh
-  current_time=$(date +%H:%M)
-  current_date=$(date +%Y-%m-%d)
+  current_time=$(date -u +%H:%M)
+  current_date=$(date -u +%Y-%m-%d)
   if [ "$current_time" -ge "00:01" ] && [ "$suntimes_has_run_today" = false ]; then
     /usr/bin/sudo /usr/bin/python3 /home/pi/METARMap/suntimes.py
     suntimes_has_run_today=true

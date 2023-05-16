@@ -257,7 +257,7 @@ while looplimit > 0:
         lightningConditions = False
 
         brightness_adjustment = 1.0
-        current_utc_time = datetime.utcnow().time()
+        current_utc_datetime = datetime.utcnow()
         today = datetime.utcnow().date()
 
         try:
@@ -281,8 +281,8 @@ while looplimit > 0:
             brightness_adjustment = 1
 
         # print(i, current_utc_time, t1, t2, t3, t4)
-        # Convert t to a datetime object with today's date
-        t = datetime.combine(today, current_utc_time)  
+
+        t = current_utc_datetime
 
         if conditions != None:
             # Check the position of t relative to t1, t2, t3, and t4
