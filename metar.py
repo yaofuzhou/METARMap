@@ -67,8 +67,8 @@ DIM_TIME_START                   = time(19,0)       # Time of day to run at LED_
 USE_SUNRISE_SUNSET               = False            # Set to True if instead of fixed times for bright/dimming, you want to use local sunrise/sunset
 LOCATION                         = "Baltimore"      # Nearby city for Sunset/Sunrise timing, refer to https://astral.readthedocs.io/en/latest/#cities for list of cities supported
 
-LED_BRIGHTNESS_DIM               = 0.316            # Float from 0.0 (min) to 1.0 (max)
-LED_BRIGHTNESS_DARK              = 0.1              # Float from 0.0 (min) to 1.0 (max)
+LED_BRIGHTNESS_DIM               = 0.2            # Float from 0.0 (min) to 1.0 (max)
+LED_BRIGHTNESS_DARK              = 0.04              # Float from 0.0 (min) to 1.0 (max)
 
 ß# ----- External Display support -----
 ACTIVATE_EXTERNAL_METAR_DISPLAY  = False            # Set to True if you want to display METAR conditions to a small external display
