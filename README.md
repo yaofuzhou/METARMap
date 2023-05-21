@@ -138,6 +138,7 @@ Set the `LED_BRIGHTNESS_DIM` and `LED_BRIGHTNESS_DARK` settings to the level you
 For each LED, its brightness is set to 
 * `LED_BRIGHTNESS_DARK` when it is locally before the morning twilight or after the evening twilight;
 * `LED_BRIGHTNESS_DIM` when it is locally before the sunrise or after the sunset but still within morning or evening twilight;
+* `CONTINUOUS_BRIGHTNESS` when its brightness continuously varies between the values of `LED_BRIGHTNESS_DARK` and `LED_BRIGHTNESS_DIMgit`;
 * Normal brightness when it is locally between sunrise and sunset.
 
 The twilight beginning, sunrise, sunset, and twilight ending times are found in the **[suntimes.csv](suntimes.csv)** file.
