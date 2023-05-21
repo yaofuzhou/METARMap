@@ -70,7 +70,7 @@ LOCATION                         = "Baltimore"      # Nearby city for Sunset/Sun
 LED_BRIGHTNESS_DIM               = 0.2            # Float from 0.0 (min) to 1.0 (max)
 LED_BRIGHTNESS_DARK              = 0.04              # Float from 0.0 (min) to 1.0 (max)
 
-ß# ----- External Display support -----
+# ----- External Display support -----
 ACTIVATE_EXTERNAL_METAR_DISPLAY  = False            # Set to True if you want to display METAR conditions to a small external display
 DISPLAY_ROTATION_SPEED           = 5.0              # Float in seconds, e.g 2.0 for two seconds
 
@@ -258,7 +258,7 @@ while looplimit > 0:
 
         brightness_adjustment = 1.0
         current_utc_datetime = datetime.utcnow()
-        today = datetime.utcnow().date()
+        today = datetime.now().date()
 
         try:
             t1 = datetime.strptime(conditions['twilight_start'], '%H:%M:%S').time()
@@ -270,6 +270,11 @@ while looplimit > 0:
             t2 = datetime.combine(today, t2)
             t3 = datetime.combine(today, t3)
             t4 = datetime.combine(today, t4)
+            print("current time    -", t)
+            print("twilight starts -", t1)
+            print("sunrise         -", t2)
+            print("sunset          -", t3)
+            print("twilight ends   -", t4)
             # Adjust t2, t3, and t4 if they're earlier than the previous time
             if t2 < t1:
                 t2 += timedelta(days=1)
@@ -283,6 +288,13 @@ while looplimit > 0:
         # print(i, current_utc_time, t1, t2, t3, t4)
 
         t = current_utc_datetime
+
+        print("after adjustments to the date -")
+        print("current time    -", t)
+        print("twilight starts -", t1)
+        print("sunrise         -", t2)
+        print("sunset          -", t3)
+        print("twilight ends   -", t4)
 
         if conditions != None:
             # Check the position of t relative to t1, t2, t3, and t4
