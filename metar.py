@@ -67,8 +67,9 @@ DIM_TIME_START                   = time(19,0)       # Time of day to run at LED_
 USE_SUNRISE_SUNSET               = False            # Set to True if instead of fixed times for bright/dimming, you want to use local sunrise/sunset
 LOCATION                         = "Baltimore"      # Nearby city for Sunset/Sunrise timing, refer to https://astral.readthedocs.io/en/latest/#cities for list of cities supported
 
-LED_BRIGHTNESS_DIM               = 0.2            # Float from 0.0 (min) to 1.0 (max)
-LED_BRIGHTNESS_DARK              = 0.04              # Float from 0.0 (min) to 1.0 (max)
+LED_BRIGHTNESS_DIM               = 0.2              # Float from 0.0 (min) to 1.0 (max)
+LED_BRIGHTNESS_DARK              = 0.04             # Float from 0.0 (min) to 1.0 (max)
+CONTINUOUS_BRIGHTNESS            = True             # If set to True, brightness in the twilight zone will vary continuously between LED_BRIGHTNESS_DIM and LED_BRIGHTNESS_DARK
 
 # ----- External Display support -----
 ACTIVATE_EXTERNAL_METAR_DISPLAY  = False            # Set to True if you want to display METAR conditions to a small external display
@@ -301,11 +302,23 @@ while looplimit > 0:
             if t < t1:
                 brightness_adjustment = LED_BRIGHTNESS_DARK
             elif t1 <= t < t2:
-                brightness_adjustment = LED_BRIGHTNESS_DIM
+                if CONTINUOUS_BRIGHTNESS:
+                    t21 = (t2-t1).total_seconds()
+                    dt = (t-t1).total_seconds()
+                    d_brightness = LED_BRIGHTNESS_DIM - LED_BRIGHTNESS_DARK
+                    brightness_adjustment = LED_BRIGHTNESS_DARK + d_brightness * dt / t21
+                else:
+                    brightness_adjustment = LED_BRIGHTNESS_DIM
             elif t2 <= t < t3:
                 brightness_adjustment = 1.0
             elif t3 <= t < t4:
-                brightness_adjustment = LED_BRIGHTNESS_DIM
+                if CONTINUOUS_BRIGHTNESS:
+                    t43 = (t4-t3).total_seconds()
+                    dt = (t-t3).total_seconds()
+                    d_brightness = LED_BRIGHTNESS_DIM - LED_BRIGHTNESS_DARK
+                    brightness_adjustment = LED_BRIGHTNESS_DIM - d_brightness * dt / t43
+                else:
+                    brightness_adjustment = LED_BRIGHTNESS_DIM
             else:
                 brightness_adjustment = LED_BRIGHTNESS_DARK
             windy = True if (ACTIVATE_WINDCONDITION_ANIMATION and windCycle == True and (conditions["windSpeed"] >= WIND_BLINK_THRESHOLD or conditions["windGust"] == True)) else False
