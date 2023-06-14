@@ -1,3 +1,4 @@
+import os
 import csv
 import requests
 from datetime import datetime
@@ -13,7 +14,7 @@ def format_time(time_str):
     return datetime.strptime(time_str, '%I:%M:%S %p').strftime('%H:%M:%S')
 
 # Read airport locations from CSV file and write sun times to output file
-with open('airports.csv', 'r') as input_file, open('suntimes.csv', 'w') as output_file:
+with open('airports.csv', 'r') as input_file, open('suntimes_temp.csv', 'w') as output_file:
     reader = csv.DictReader(input_file)
     writer = csv.writer(output_file)
     writer.writerow(['code', 'twilight_start', 'sunrise', 'sunset', 'twilight_end'])
@@ -31,3 +32,6 @@ with open('airports.csv', 'r') as input_file, open('suntimes.csv', 'w') as outpu
             format_time(sun_times['sunset']),
             format_time(sun_times['civil_twilight_end'])
         ])
+
+# Replace old file with new file
+os.replace('suntimes_temp.csv', 'suntimes.csv')
