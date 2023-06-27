@@ -290,12 +290,12 @@ while looplimit > 0:
 
         t = current_utc_datetime
 
-        print("after adjustments to the date -")
-        print("current time    -", t)
-        print("twilight starts -", t1)
-        print("sunrise         -", t2)
-        print("sunset          -", t3)
-        print("twilight ends   -", t4)
+        # print("after adjustments to the date -")
+        # print("current time    -", t)
+        # print("twilight starts -", t1)
+        # print("sunrise         -", t2)
+        # print("sunset          -", t3)
+        # print("twilight ends   -", t4)
 
         if conditions != None:
             # Check the position of t relative to t1, t2, t3, and t4
