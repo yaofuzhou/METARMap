@@ -17,7 +17,7 @@ I've created detailed instructions about the setup and parts used here: https://
 * Update packages 
   * `sudo apt-get update`
   * `sudo apt-get upgrade`
-* Copy the **[metar.py](metar.py)**, **[pixelsoff.py](pixelsoff.py)**, **[airports](airports)**, **[refresh.sh](refresh.sh)** and **[lightsoff.sh](lightsoff.sh)** scripts into the pi home directory (/home/pi)
+* Copy the **[metar.py](metar.py)**, **[pixelsoff.py](pixelsoff.py)**, **[airports](airports)**, **[refresh.sh](refresh.sh)**, **[lightsoff.sh](lightsoff.sh)**, **[on.sh](on.sh)**, and **[off.sh](off.sh)** scripts into the pi home directory (/home/pi)
 * Install python3 and pip3 if not already installed
   * `sudo apt-get install python3`
   * `sudo apt-get install python3-pip`
@@ -27,10 +27,10 @@ I've created detailed instructions about the setup and parts used here: https://
 * Test the script by running it directly (it needs to run with root permissions to access the GPIO pins):
   * `sudo python3 metar.py`
 * Make appropriate changes to the **[airports](airports)** file for the airports you want to use and change the **[metar.py](metar.py)** and **[pixelsoff.py](pixelsoff.py)** script to the correct **`LED_COUNT`** (including NULLs if you have LEDS in between airports that will stay off) and **`LED_BRIGHTNESS`** if you want to change it
-* To run the script automatically when you power the Raspberry Pi, you will need to grant permissions to execute the **[refresh.sh](refresh.sh)** and **[lightsoff.sh](lightsoff.sh)** script and read permissions to the **[airports](airports)**, **[metar.py](metar.py)** and **[pixelsoff.py](pixelsoff.py)** script using chmod:
+* To run the script automatically when you power the Raspberry Pi, you will need to grant permissions to execute the **[refresh.sh](refresh.sh)**, **[lightsoff.sh](lightsoff.sh)**, **[on.sh](on.sh)**, and **[off.sh](off.sh)** scripts and read permissions to the **[airports](airports)**, **[metar.py](metar.py)** and **[pixelsoff.py](pixelsoff.py)** script using chmod:
   * `chmod +x filename` will grant execute permissions
   * `chmod +r filename` will grant write permissions
-* To have the script start up automatically and refresh in regular intervals, use crontab and set the appropriate interval. For an example you can refer to the [crontab](crontab) file in the GitHub repo (make sure you grant the file execute permissions beforehand to the refresh.sh and lightsoff.sh file). To edit your crontab type: **`crontab -e`**, after you are done with the edits, exit out by pressing **ctrl+x** and confirm the write operation
+* To have the script start up automatically and refresh in regular intervals, use crontab and set the appropriate interval. For an example you can refer to the [crontab](crontab) file in the GitHub repo (make sure you grant the file execute permissions beforehand to the refresh.sh, lightsoff.sh, on.sh, and off.sh files). To edit your crontab type: **`crontab -e`**, after you are done with the edits, exit out by pressing **ctrl+x** and confirm the write operation
   * The sample crontab will run the script every 5 minutes (the */5) between the hours of 7 to 21, which includes the 21 hour, so it means it will run until 21:55
   * Then at 22:05 it will run the lightsoff.sh script, which will turn all the lights off
 
