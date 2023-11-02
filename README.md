@@ -2,7 +2,7 @@
 
 Raspberry Pi project to visualize flight conditions on a map using WS8211 LEDs addressed via NeoPixel
 
-with **Additional Wind condition blinking/fading functionality**
+with **Additional LED Dimming Functionality Based On Time Of The Day**
 
 ## Detailed instructions
 
@@ -61,7 +61,7 @@ If you want to use this extra functionality, then inside the **[metar.py](metar.
   * `BLINKS_SPEED` - How fast the blinking happens, I found 1 second to be a happy medium so it's not too busy, but you can also make it faster, for example every half a second by using 0.5
   * `BLINK_TOTALTIME_SECONDS` = How long do you want the script to run. I have this set to 300 seconds as I have my crontab setup to re-run the script every 5 minutes to get the latest weather information
 
-## Additional LED dimming functionality based on time of day
+## Additional LED Dimming Functionality Based On Time Of The Day
 
 This optional functionality allows you to run the LEDs at a dimmed lower level between a certain time of the day.
 
