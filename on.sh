@@ -41,5 +41,5 @@ rm -f stop_refresh
 # Run the refresh script in a loop
 while [ ! -f stop_refresh ]; do
   ./refresh.sh
-  sleep 305
+  sleep 340
 done
