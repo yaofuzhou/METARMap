@@ -19,6 +19,13 @@
 #
 # For more information see the manual pages of crontab(5) and cron(8)
 #
+# Uncomment and edit this block if you want something like
+# run every 5 minutes from 7 AM to 9 PM every day.
+#
 # m h  dom mon dow   command
-*/5 7-21 * * *  /home/pi/refresh.sh
-05 22 * * *     /home/pi/lightsoff.sh
+# 0 7 * * * /home/pi/METARMap/on.sh
+# 0 21 * * * /home/pi/METARMap/off.sh
+#
+# Uncomment and edit this block if you want the LEDs turned on upon booting up.
+#
+@reboot /home/pi/METARMap/on.sh
