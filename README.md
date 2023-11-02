@@ -1,7 +1,7 @@
 # METARMap
 
 Raspberry Pi project to visualize flight conditions on a map using WS8211 LEDs addressed via NeoPixel
-with ## Additional Wind condition blinking/fading functionality
+with **Additional Wind condition blinking/fading functionality**
 
 ## Detailed instructions
 
