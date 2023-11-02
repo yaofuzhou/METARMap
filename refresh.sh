@@ -8,7 +8,10 @@ while true; do
     break
   fi
 
-  # Existing content of your refresh.sh script goes here...
+  /usr/bin/sudo pkill -F /home/pi/METARMap/offpid.pid
+  /usr/bin/sudo pkill -F /home/pi/METARMap/metarpid.pid
+  /usr/bin/sudo /usr/bin/python3 /home/pi/METARMap/metar.py & echo $! > /home/pi/METARMap/metarpid.pid
+
 
   # Sleep for 300 seconds (5 minutes) before running again
   sleep 300
