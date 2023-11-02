@@ -272,11 +272,11 @@ while looplimit > 0:
             t2 = datetime.combine(today, t2)
             t3 = datetime.combine(today, t3)
             t4 = datetime.combine(today, t4)
-            print("current time    -", t)
-            print("twilight starts -", t1)
-            print("sunrise         -", t2)
-            print("sunset          -", t3)
-            print("twilight ends   -", t4)
+            # print("current time    -", t)
+            # print("twilight starts -", t1)
+            # print("sunrise         -", t2)
+            # print("sunset          -", t3)
+            # print("twilight ends   -", t4)
             # Adjust t2, t3, and t4 if they're earlier than the previous time
             if t2 < t1:
                 t2 += timedelta(days=1)
