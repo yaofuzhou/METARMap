@@ -50,11 +50,11 @@ ACTIVATE_LIGHTNING_ANIMATION     = True             # Set this to False for Stat
 # Fade instead of blink
 FADE_INSTEAD_OF_BLINK            = True             # Set to False if you want blinking
 # Blinking Windspeed Threshold
-WIND_BLINK_THRESHOLD             = 15               # Knots of windspeed to blink/fade
-HIGH_WINDS_THRESHOLD             = 25               # Knots of windspeed to trigger Yellow LED indicating very High Winds, set to -1 if you don't want to use this
-ALWAYS_BLINK_FOR_GUSTS           = False            # Always animate for Gusts (regardless of speeds)
+WIND_BLINK_THRESHOLD             = 50               # Knots of windspeed to blink/fade
+HIGH_WINDS_THRESHOLD             = 75               # Knots of windspeed to trigger Yellow LED indicating very High Winds, set to -1 if you don't want to use this
+ALWAYS_BLINK_FOR_GUSTS           = True             # Always animate for Gusts (regardless of speeds)
 # Blinking Speed in seconds
-BLINK_SPEED                      = 1.0              # Float in seconds, e.g. 0.5 for half a second
+BLINK_SPEED                      = 0.5              # Float in seconds, e.g. 0.5 for half a second
 # Total blinking time in seconds.
 # For example set this to 300 to keep blinking for 5 minutes if you plan to run the script every 5 minutes to fetch the updated weather
 BLINK_TOTALTIME_SECONDS          = 300
