@@ -28,4 +28,4 @@
 #
 # Uncomment and edit this block if you want the LEDs turned on upon booting up.
 #
-@reboot /home/pi/METARMap/on.sh
+@reboot cd /home/pi/METARMap/ && sudo ./on.sh
