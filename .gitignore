@@ -2,3 +2,5 @@ suntimes.csv
 *.pid
 .DS_Store
 __pycache__/
+airports.csv
+stop_refresh
