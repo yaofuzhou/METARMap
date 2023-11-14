@@ -36,7 +36,8 @@ if [ ! -f "$SUNTIMES_CSV" ] || [ "$(date -r "$SUNTIMES_CSV" +%Y-%m-%d)" != "$(da
 fi
 
 # Remove the stop_refresh file if it exists to allow the refresh process to run
-rm -f stop_refresh
+sudo rm -f stop_refresh
+sudo rm -f ./*.pid
 
 # Run the refresh script in a loop
 while [ ! -f stop_refresh ]; do
