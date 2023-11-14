@@ -3,6 +3,8 @@
 # Turn off the LEDs
 ./lightsoff.sh
 
+sudo rm -f ./*.pid
+
 # Update the suntimes.csv for the next use
 if [ ! -f "$SUNTIMES_CSV" ] || [ "$(date -r "$SUNTIMES_CSV" +%Y-%m-%d)" != "$(date +%Y-%m-%d)" ]; then
   echo "Updating suntimes.csv..."
