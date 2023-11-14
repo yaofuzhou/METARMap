@@ -36,8 +36,9 @@ if [ ! -f "$SUNTIMES_CSV" ] || [ "$(date -r "$SUNTIMES_CSV" +%Y-%m-%d)" != "$(da
 fi
 
 # Remove the stop_refresh file if it exists to allow the refresh process to run
-sudo rm -f stop_refresh
+./lightsoff.sh
 sudo rm -f ./*.pid
+sudo rm -f stop_refresh
 
 # Run the refresh script in a loop
 while [ ! -f stop_refresh ]; do
