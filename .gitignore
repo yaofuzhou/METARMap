@@ -1,4 +1,5 @@
 suntimes.csv
+suntimes_temp.csv
 *.pid
 .DS_Store
 __pycache__/
