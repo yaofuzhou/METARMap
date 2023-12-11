@@ -7,8 +7,9 @@ import neopixel
 import time
 from time import sleep
 from datetime import datetime, timedelta, time
-
+import math
 import csv
+
 try:
     import astral
 except ImportError:
@@ -126,18 +127,45 @@ if astral is not None and USE_SUNRISE_SUNSET:
             DIM_TIME_START = sun['sunset'].time()
     print("Sunrise:" + BRIGHT_TIME_START.strftime('%H:%M') + " Sunset:" + DIM_TIME_START.strftime('%H:%M'))
 
+
+
+# Function to calculate Euclidean distance between two points (x1, y1) and (x2, y2)
+def calculate_euclidean_distance(x1, y1, x2, y2):
+    return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+# Function to light up LEDs based on ISS position and concentric rings
+def light_up_iss_rings(iss_x, iss_y, airports_data, pixels):
+    # Radii of the concentric rings
+    radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5)]
+    for inner_rad, outer_rad in radii:
+        for i, airport in enumerate(airports_data):
+            airport_x, airport_y = airport['lon'], airport['lat']  # Treat lon as x and lat as y
+            distance = calculate_euclidean_distance(iss_x, iss_y, airport_x, airport_y)
+            if inner_rad <= distance < outer_rad:
+                pixels[i] = (255, 255, 255)  # Light up the LED
+            else:
+                # Reset to default color or turn off
+                pixels[i] = COLOR_CLEAR
+        pixels.show()
+        sleep(0.1)  # Each ring lasts 0.1 seconds
+
+
+
 # Initialize the LED strip
 bright = BRIGHT_TIME_START < datetime.now().time() < DIM_TIME_START
 print("Wind animation:" + str(ACTIVATE_WINDCONDITION_ANIMATION))
 print("Lightning animation:" + str(ACTIVATE_LIGHTNING_ANIMATION))
 print("Daytime Dimming:" + str(ACTIVATE_DAYTIME_DIMMING) + (" using Sunrise/Sunset" if USE_SUNRISE_SUNSET and ACTIVATE_DAYTIME_DIMMING else ""))
 print("External Display:" + str(ACTIVATE_EXTERNAL_METAR_DISPLAY))
-pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness = LED_BRIGHTNESS_DARK if (ACTIVATE_DAYTIME_DIMMING and bright == False) else LED_BRIGHTNESS, pixel_order = LED_ORDER, auto_write = False)
+# pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness = LED_BRIGHTNESS_DARK if (ACTIVATE_DAYTIME_DIMMING and bright == False) else LED_BRIGHTNESS, pixel_order = LED_ORDER, auto_write = False)
+pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness = LED_BRIGHTNESS, pixel_order = LED_ORDER, auto_write = False)
+
 
 # Read the airports file to retrieve list of airports and use as order for LEDs
 with open("/home/pi/METARMap/airports.csv", newline='') as f:
     reader = csv.DictReader(f)
     airports = [row['code'] for row in reader]
+    airports_data = [{key: float(row[key]) if key in ['lat', 'lon'] else row[key] for key in row} for row in reader]
 try:
     with open("/home/pi/METARMap/displayairports") as f2:
         displayairports = f2.readlines()
@@ -272,12 +300,6 @@ while looplimit > 0:
             t2 = datetime.combine(today, t2)
             t3 = datetime.combine(today, t3)
             t4 = datetime.combine(today, t4)
-            # print("current time    -", t)
-            # print("twilight starts -", t1)
-            # print("sunrise         -", t2)
-            # print("sunset          -", t3)
-            # print("twilight ends   -", t4)
-            # Adjust t2, t3, and t4 if they're earlier than the previous time
             if t2 < t1:
                 t2 += timedelta(days=1)
             if t3 < t2:
@@ -287,16 +309,7 @@ while looplimit > 0:
         except:
             brightness_adjustment = 1
 
-        # print(i, current_utc_time, t1, t2, t3, t4)
-
         t = current_utc_datetime
-
-        # print("after adjustments to the date -")
-        # print("current time    -", t)
-        # print("twilight starts -", t1)
-        # print("sunrise         -", t2)
-        # print("sunset          -", t3)
-        # print("twilight ends   -", t4)
 
         if conditions != None:
             # Check the position of t relative to t1, t2, t3, and t4
@@ -376,10 +389,13 @@ while looplimit > 0:
             displayAirportCounter = displayAirportCounter + 1 if displayAirportCounter < numAirports-1 else 0
             print("showing METAR Display for " + stationList[displayAirportCounter])
 
+    # Call the ISS animation function
+    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels)  # ISS fixed position
+
     # Switching between animation cycles
     sleep(BLINK_SPEED)
     windCycle = False if windCycle else True
     looplimit -= 1
 
-print()
+
 print("Done")
