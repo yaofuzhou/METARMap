@@ -158,14 +158,19 @@ print("Lightning animation:" + str(ACTIVATE_LIGHTNING_ANIMATION))
 print("Daytime Dimming:" + str(ACTIVATE_DAYTIME_DIMMING) + (" using Sunrise/Sunset" if USE_SUNRISE_SUNSET and ACTIVATE_DAYTIME_DIMMING else ""))
 print("External Display:" + str(ACTIVATE_EXTERNAL_METAR_DISPLAY))
 # pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness = LED_BRIGHTNESS_DARK if (ACTIVATE_DAYTIME_DIMMING and bright == False) else LED_BRIGHTNESS, pixel_order = LED_ORDER, auto_write = False)
-pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness = LED_BRIGHTNESS, pixel_order = LED_ORDER, auto_write = False)
+pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, pixel_order=LED_ORDER, auto_write=False)
 
 
-# Read the airports file to retrieve list of airports and use as order for LEDs
+# Read the airports file and store latitude and longitude
+airports_data = []
 with open("/home/pi/METARMap/airports.csv", newline='') as f:
     reader = csv.DictReader(f)
-    airports = [row['code'] for row in reader]
-    airports_data = [{key: float(row[key]) if key in ['lat', 'lon'] else row[key] for key in row} for row in reader]
+    for row in reader:
+        airports_data.append({
+            'code': row['code'],
+            'lat': float(row['lat']),
+            'lon': float(row['lon'])
+        })
 try:
     with open("/home/pi/METARMap/displayairports") as f2:
         displayairports = f2.readlines()
@@ -273,8 +278,10 @@ displayTime = 0.0
 displayAirportCounter = 0
 numAirports = len(stationList)
 while looplimit > 0:
+    # Store the current LED colors based on METAR data
+    current_led_colors = [pixels[i] for i in range(LED_COUNT)]
     i = 0
-    for airportcode in airports:
+    for airportcode in airports_data:
         # Skip NULL entries
         if airportcode == "NULL":
             i += 1
@@ -390,7 +397,12 @@ while looplimit > 0:
             print("showing METAR Display for " + stationList[displayAirportCounter])
 
     # Call the ISS animation function
-    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels)  # ISS fixed position
+    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels)
+
+    # Restore the LED colors to the METAR-based colors
+    for i in range(LED_COUNT):
+        pixels[i] = current_led_colors[i]
+    pixels.show()
 
     # Switching between animation cycles
     sleep(BLINK_SPEED)
