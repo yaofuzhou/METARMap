@@ -165,6 +165,7 @@ pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, pixel_
 airports_data = []
 with open("/home/pi/METARMap/airports.csv", newline='') as f:
     reader = csv.DictReader(f)
+    airports = [row['code'] for row in reader]
     for row in reader:
         airports_data.append({
             'code': row['code'],
@@ -278,10 +279,8 @@ displayTime = 0.0
 displayAirportCounter = 0
 numAirports = len(stationList)
 while looplimit > 0:
-    # Store the current LED colors based on METAR data
-    current_led_colors = [pixels[i] for i in range(LED_COUNT)]
     i = 0
-    for airportcode in airports_data:
+    for airportcode in airports:
         # Skip NULL entries
         if airportcode == "NULL":
             i += 1
@@ -397,12 +396,7 @@ while looplimit > 0:
             print("showing METAR Display for " + stationList[displayAirportCounter])
 
     # Call the ISS animation function
-    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels)
-
-    # Restore the LED colors to the METAR-based colors
-    for i in range(LED_COUNT):
-        pixels[i] = current_led_colors[i]
-    pixels.show()
+    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels)  # ISS fixed position
 
     # Switching between animation cycles
     sleep(BLINK_SPEED)
