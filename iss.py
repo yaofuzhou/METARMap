@@ -10,6 +10,6 @@ def get_iss_location():
 
 # Example: Print ISS location every 5 minutes
 while True:
-    position = get_iss_location()
-    print(f"ISS Location: Latitude {position['latitude']}, Longitude {position['longitude']}")
-    time.sleep(10)  # Wait for 5 minutes
+    iss_position = get_iss_location()
+    print(f"ISS Location: Latitude {iss_position['latitude']}, Longitude {iss_position['longitude']}")
+    time.sleep(2)  # Wait for 2 seconds
