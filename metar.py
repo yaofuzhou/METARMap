@@ -166,7 +166,7 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, 
             else:
                 pixels[i] = current_led_colors[i]  # Set to stored color
         pixels.show()
-        sleep(0.05)  # Each ring lasts 0.1 seconds
+        sleep(0.05)  # Each ring lasts 0.05 seconds
 
         # After the last ring, restore the LEDs to their original state
         if index == len(radii) - 1:  # Check if it's the last ring
