@@ -386,7 +386,7 @@ while looplimit > 0:
     current_led_colors = [pixels[i] for i in range(LED_COUNT)]
 
     # Call the modified ISS animation function
-    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, 0.9)
+    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, 0.85)
 
     # Switching between animation cycles
     sleep(BLINK_SPEED)
