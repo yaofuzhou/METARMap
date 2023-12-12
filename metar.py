@@ -155,23 +155,16 @@ pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, pixel_
 
 # Read the airports file and store latitude and longitude
 airports_data = []
+airports = []
 with open("/home/pi/METARMap/airports.csv", newline='') as f:
     reader = csv.DictReader(f)
-    airports = [row['code'] for row in reader]
     for row in reader:
         airports_data.append({
             'code': row['code'],
             'lat': float(row['lat']),
             'lon': float(row['lon'])
         })
-try:
-    with open("/home/pi/METARMap/displayairports") as f2:
-        displayairports = f2.readlines()
-    displayairports = [x.strip() for x in displayairports]
-    print("Using subset airports for LED display")
-except IOError:
-    print("Rotating through all airports on LED display")
-    displayairports = None
+        airports.append(row['code'])
 
 # Retrieve METAR from aviationweather.gov data server
 # Details about parameters can be found here: https://www.aviationweather.gov/dataserver/example?datatype=metar
