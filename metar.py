@@ -165,6 +165,14 @@ with open("/home/pi/METARMap/airports.csv", newline='') as f:
             'lon': float(row['lon'])
         })
         airports.append(row['code'])
+try:
+    with open("/home/pi/METARMap/displayairports") as f2:
+        displayairports = f2.readlines()
+    displayairports = [x.strip() for x in displayairports]
+    print("Using subset airports for LED display")
+except IOError:
+    print("Rotating through all airports on LED display")
+    displayairports = None
 
 # Retrieve METAR from aviationweather.gov data server
 # Details about parameters can be found here: https://www.aviationweather.gov/dataserver/example?datatype=metar
