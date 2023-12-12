@@ -140,7 +140,7 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors):
                 # Set to stored color from current_led_colors
                 pixels[i] = current_led_colors[i]
         pixels.show()
-        sleep(0.5)  # Each ring lasts 0.1 seconds
+        sleep(0.1)  # Each ring lasts 0.1 seconds
 
 
 
@@ -369,7 +369,7 @@ while looplimit > 0:
                 pixels[i + OFFSET_LEGEND_BY + 6] = COLOR_VFR if not windCycle else COLOR_HIGH_WINDS  # high winds
 
     # Update actual LEDs all at once
-    # pixels.show()
+    pixels.show()
 
     current_led_colors = [pixels[i] for i in range(LED_COUNT)]
 
