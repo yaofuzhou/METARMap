@@ -52,7 +52,9 @@ WIND_BLINK_THRESHOLD             = 15               # Knots of windspeed to blin
 HIGH_WINDS_THRESHOLD             = 25               # Knots of windspeed to trigger Yellow LED indicating very High Winds, set to -1 if you don't want to use this
 ALWAYS_BLINK_FOR_GUSTS           = True             # Always animate for Gusts (regardless of speeds)
 # Blinking Speed in seconds
-BLINK_SPEED                      = 1.0              # Float in seconds, e.g. 0.5 for half a second
+BLINK_PAUSE                      = 0.5              # Float in seconds, e.g. 0.5 for half a second
+ISS_ANIMATION_SPEED              = 0.05             # duration of each frame for the tracking animation. 10 frames in total
+BLINK_SPEED = ISS_ANIMATION_SPEED * 10 + BLINK_PAUSE
 # Total blinking time in seconds.
 # For example set this to 300 to keep blinking for 5 minutes if you plan to run the script every 5 minutes to fetch the updated weather
 BLINK_TOTALTIME_SECONDS          = 300
@@ -166,7 +168,7 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, 
             else:
                 pixels[i] = current_led_colors[i]  # Set to stored color
         pixels.show()
-        sleep(0.05)  # Each ring lasts 0.05 seconds
+        sleep(ISS_ANIMATION_SPEED)  # Each ring lasts 0.05 seconds
 
         # After the last ring, restore the LEDs to their original state
         if index == len(radii) - 1:  # Check if it's the last ring
@@ -420,7 +422,7 @@ while looplimit > 0:
             print(f"Error in ISS animation: {e}")
 
     # Switching between animation cycles
-    sleep(BLINK_SPEED)
+    sleep(BLINK_PAUSE)
     windCycle = False if windCycle else True
     looplimit -= 1
 
