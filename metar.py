@@ -414,8 +414,8 @@ while looplimit > 0:
 
     if iss_position:
         try:
-            iss_x = float(iss_position['latitude'])
-            iss_y = float(iss_position['longitude'])
+            iss_x = float(iss_position['longitude'])
+            iss_y = float(iss_position['latitude'])
             print("ISS lat lon:", iss_y, iss_x)
             light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, 0.85)
             # light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, 0.85)  # for test
