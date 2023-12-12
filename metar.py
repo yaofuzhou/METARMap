@@ -120,11 +120,27 @@ if astral is not None and USE_SUNRISE_SUNSET:
             DIM_TIME_START = sun['sunset'].time()
     print("Sunrise:" + BRIGHT_TIME_START.strftime('%H:%M') + " Sunset:" + DIM_TIME_START.strftime('%H:%M'))
 
+# Global variable to store the last ISS position update time
+last_iss_update_time = datetime.min
+iss_position = None
+
 def get_iss_location():
     url = "http://api.open-notify.org/iss-now.json"
-    with urllib.request.urlopen(url) as response:
-        data = json.loads(response.read().decode())
-        return data['iss_position']
+    try:
+        with urllib.request.urlopen(url) as response:
+            data = json.loads(response.read().decode())
+            return data['iss_position']
+    except Exception as e:
+        print(f"Error fetching ISS location: {e}")
+        return None
+
+def should_update_iss_position():
+    global last_iss_update_time
+    current_time = datetime.now()
+    if (current_time - last_iss_update_time).total_seconds() >= 5:
+        last_iss_update_time = current_time
+        return True
+    return False
 
 # Function to calculate Euclidean distance between two points (x1, y1) and (x2, y2)
 def calculate_euclidean_distance(x1, y1, x2, y2):
@@ -390,10 +406,18 @@ while looplimit > 0:
 
     current_led_colors = [pixels[i] for i in range(LED_COUNT)]
 
-    # Call the modified ISS animation function
-    position = get_iss_location()
-    # light_up_iss_rings(position['latitude'], position['longitude'], airports_data, pixels, current_led_colors, 0.85)
-    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, 0.85)
+    # Check if it's time to update ISS position
+    if should_update_iss_position():
+        iss_position = get_iss_location()
+
+    if iss_position:
+        try:
+            iss_x = float(iss_position['latitude'])
+            iss_y = float(iss_position['longitude'])
+            # light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, 0.85)
+            light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, 0.85)
+        except Exception as e:
+            print(f"Error in ISS animation: {e}")
 
     # Switching between animation cycles
     sleep(BLINK_SPEED)
