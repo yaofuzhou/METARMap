@@ -129,7 +129,7 @@ def calculate_euclidean_distance(x1, y1, x2, y2):
 def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors):
     # Radii of the concentric rings
     radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5)]
-    for inner_rad, outer_rad in radii:
+    for index, (inner_rad, outer_rad) in enumerate(radii):
         for i, airport in enumerate(airports_data):
             airport_x, airport_y = airport['lon'], airport['lat']  # Treat lon as x and lat as y
             distance = calculate_euclidean_distance(iss_x, iss_y, airport_x, airport_y)
@@ -137,10 +137,15 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors):
                 pixels[i] = (255, 255, 255)  # Light up the LED
                 print(f"Lighting up {airport['code']} at pixel {i} with color {pixels[i]}")
             else:
-                # Set to stored color from current_led_colors
-                pixels[i] = current_led_colors[i]
+                pixels[i] = current_led_colors[i]  # Set to stored color
         pixels.show()
         sleep(0.1)  # Each ring lasts 0.1 seconds
+
+        # After the last ring, restore the LEDs to their original state
+        if index == len(radii) - 1:  # Check if it's the last ring
+            for i, color in enumerate(current_led_colors):
+                pixels[i] = color
+            pixels.show()
 
 
 
