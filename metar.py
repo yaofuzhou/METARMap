@@ -9,6 +9,7 @@ from time import sleep
 from datetime import datetime, timedelta, time
 import math
 import csv
+import json
 
 try:
     import astral
@@ -119,7 +120,11 @@ if astral is not None and USE_SUNRISE_SUNSET:
             DIM_TIME_START = sun['sunset'].time()
     print("Sunrise:" + BRIGHT_TIME_START.strftime('%H:%M') + " Sunset:" + DIM_TIME_START.strftime('%H:%M'))
 
-
+def get_iss_location():
+    url = "http://api.open-notify.org/iss-now.json"
+    with urllib.request.urlopen(url) as response:
+        data = json.loads(response.read().decode())
+        return data['iss_position']
 
 # Function to calculate Euclidean distance between two points (x1, y1) and (x2, y2)
 def calculate_euclidean_distance(x1, y1, x2, y2):
@@ -386,6 +391,8 @@ while looplimit > 0:
     current_led_colors = [pixels[i] for i in range(LED_COUNT)]
 
     # Call the modified ISS animation function
+    position = get_iss_location()
+    # light_up_iss_rings(position['latitude'], position['longitude'], airports_data, pixels, current_led_colors, 0.85)
     light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, 0.85)
 
     # Switching between animation cycles
