@@ -14,10 +14,6 @@ try:
     import astral
 except ImportError:
     astral = None
-try:
-    import displaymetar
-except ImportError:
-    displaymetar = None
 
 # metar.py script iteration 1.5.1
 
@@ -71,10 +67,6 @@ LOCATION                         = "Baltimore"      # Nearby city for Sunset/Sun
 LED_BRIGHTNESS_DIM               = 0.2              # Float from 0.0 (min) to 1.0 (max)
 LED_BRIGHTNESS_DARK              = 0.04             # Float from 0.0 (min) to 1.0 (max)
 CONTINUOUS_BRIGHTNESS            = True             # If set to True, brightness in the twilight zone will vary continuously between LED_BRIGHTNESS_DIM and LED_BRIGHTNESS_DARK
-
-# ----- External Display support -----
-ACTIVATE_EXTERNAL_METAR_DISPLAY  = False            # Set to True if you want to display METAR conditions to a small external display
-DISPLAY_ROTATION_SPEED           = 5.0              # Float in seconds, e.g 2.0 for two seconds
 
 # ----- Show a set of Legend LEDS at the end -----
 SHOW_LEGEND = False            # Set to true if you want to have a set of LEDs at the end show the legend
@@ -156,7 +148,6 @@ bright = BRIGHT_TIME_START < datetime.now().time() < DIM_TIME_START
 print("Wind animation:" + str(ACTIVATE_WINDCONDITION_ANIMATION))
 print("Lightning animation:" + str(ACTIVATE_LIGHTNING_ANIMATION))
 print("Daytime Dimming:" + str(ACTIVATE_DAYTIME_DIMMING) + (" using Sunrise/Sunset" if USE_SUNRISE_SUNSET and ACTIVATE_DAYTIME_DIMMING else ""))
-print("External Display:" + str(ACTIVATE_EXTERNAL_METAR_DISPLAY))
 # pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness = LED_BRIGHTNESS_DARK if (ACTIVATE_DAYTIME_DIMMING and bright == False) else LED_BRIGHTNESS, pixel_order = LED_ORDER, auto_write = False)
 pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, pixel_order=LED_ORDER, auto_write=False)
 
@@ -264,15 +255,8 @@ for stationId, conditions in conditionDict.items():
             'twilight_end': suntimes[stationId]['twilight_end']
         })
 
-# Start up external display output
-disp = None
-if displaymetar is not None and ACTIVATE_EXTERNAL_METAR_DISPLAY:
-    print("setting up external display")
-    disp = displaymetar.startDisplay()
-    displaymetar.clearScreen(disp)
-
 # Setting LED colors based on weather conditions
-looplimit = int(round(BLINK_TOTALTIME_SECONDS / BLINK_SPEED)) if (ACTIVATE_WINDCONDITION_ANIMATION or ACTIVATE_LIGHTNING_ANIMATION or ACTIVATE_EXTERNAL_METAR_DISPLAY) else 1
+looplimit = int(round(BLINK_TOTALTIME_SECONDS / BLINK_SPEED)) if (ACTIVATE_WINDCONDITION_ANIMATION or ACTIVATE_LIGHTNING_ANIMATION) else 1
 
 windCycle = False
 displayTime = 0.0
@@ -389,16 +373,6 @@ while looplimit > 0:
 
     # Call the modified ISS animation function
     light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors)
-
-    # Rotate through airports METAR on external display
-    if disp is not None:
-        if displayTime <= DISPLAY_ROTATION_SPEED:
-            displaymetar.outputMetar(disp, stationList[displayAirportCounter], conditionDict.get(stationList[displayAirportCounter], None))
-            displayTime += BLINK_SPEED
-        else:
-            displayTime = 0.0
-            displayAirportCounter = displayAirportCounter + 1 if displayAirportCounter < numAirports-1 else 0
-            print("showing METAR Display for " + stationList[displayAirportCounter])
 
     # Switching between animation cycles
     sleep(BLINK_SPEED)
