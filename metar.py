@@ -367,7 +367,7 @@ while looplimit > 0:
                 pixels[i + OFFSET_LEGEND_BY + 6] = COLOR_VFR if not windCycle else COLOR_HIGH_WINDS  # high winds
 
     # Update actual LEDs all at once
-    pixels.show()
+    # pixels.show()
 
     current_led_colors = [pixels[i] for i in range(LED_COUNT)]
 
