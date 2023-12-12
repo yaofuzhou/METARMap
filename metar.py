@@ -134,7 +134,7 @@ def calculate_euclidean_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
 # Function to light up LEDs based on ISS position and concentric rings
-def light_up_iss_rings(iss_x, iss_y, airports_data, pixels):
+def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors):
     # Radii of the concentric rings
     radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5)]
     for inner_rad, outer_rad in radii:
@@ -144,8 +144,8 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels):
             if inner_rad <= distance < outer_rad:
                 pixels[i] = (255, 255, 255)  # Light up the LED
             else:
-                # Reset to default color or turn off
-                pixels[i] = COLOR_CLEAR
+                # Set to stored color from current_led_colors
+                pixels[i] = current_led_colors[i]
         pixels.show()
         sleep(0.1)  # Each ring lasts 0.1 seconds
 
@@ -384,7 +384,12 @@ while looplimit > 0:
 
     # Update actual LEDs all at once
     pixels.show()
-    
+
+    current_led_colors = [pixels[i] for i in range(LED_COUNT)]
+
+    # Call the modified ISS animation function
+    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors)
+
     # Rotate through airports METAR on external display
     if disp is not None:
         if displayTime <= DISPLAY_ROTATION_SPEED:
@@ -394,9 +399,6 @@ while looplimit > 0:
             displayTime = 0.0
             displayAirportCounter = displayAirportCounter + 1 if displayAirportCounter < numAirports-1 else 0
             print("showing METAR Display for " + stationList[displayAirportCounter])
-
-    # Call the ISS animation function
-    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels)  # ISS fixed position
 
     # Switching between animation cycles
     sleep(BLINK_SPEED)
