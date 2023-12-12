@@ -125,16 +125,22 @@ if astral is not None and USE_SUNRISE_SUNSET:
 def calculate_euclidean_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
-# Function to light up LEDs based on ISS position and concentric rings
-def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors):
+# Function to light up LEDs based on ISS position and concentric rings with dimming effect
+def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, dimming_factor):
     # Radii of the concentric rings
     radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5)]
+    base_brightness = 255  # Base brightness level
+
     for index, (inner_rad, outer_rad) in enumerate(radii):
+        # Calculate the brightness for this ring
+        brightness = int(base_brightness * (dimming_factor ** index))
+
         for i, airport in enumerate(airports_data):
             airport_x, airport_y = airport['lon'], airport['lat']  # Treat lon as x and lat as y
             distance = calculate_euclidean_distance(iss_x, iss_y, airport_x, airport_y)
+            
             if inner_rad <= distance < outer_rad:
-                pixels[i] = (255, 255, 255)  # Light up the LED
+                pixels[i] = (brightness, brightness, brightness)  # Dimmed white light
                 print(f"Lighting up {airport['code']} at pixel {i} with color {pixels[i]}")
             else:
                 pixels[i] = current_led_colors[i]  # Set to stored color
@@ -146,6 +152,7 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors):
             for i, color in enumerate(current_led_colors):
                 pixels[i] = color
             pixels.show()
+
 
 
 
@@ -379,7 +386,7 @@ while looplimit > 0:
     current_led_colors = [pixels[i] for i in range(LED_COUNT)]
 
     # Call the modified ISS animation function
-    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors)
+    light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, 0.9)
 
     # Switching between animation cycles
     sleep(BLINK_SPEED)
