@@ -135,6 +135,7 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors):
             distance = calculate_euclidean_distance(iss_x, iss_y, airport_x, airport_y)
             if inner_rad <= distance < outer_rad:
                 pixels[i] = (255, 255, 255)  # Light up the LED
+                print(f"Lighting up {airport['code']} at pixel {i} with color {pixels[i]}")
             else:
                 # Set to stored color from current_led_colors
                 pixels[i] = current_led_colors[i]
