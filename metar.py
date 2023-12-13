@@ -60,7 +60,7 @@ WIND_BLINK_THRESHOLD             = 15               # Knots of windspeed to blin
 HIGH_WINDS_THRESHOLD             = 25               # Knots of windspeed to trigger Yellow LED indicating very High Winds, set to -1 if you don't want to use this
 ALWAYS_BLINK_FOR_GUSTS           = True             # Always animate for Gusts (regardless of speeds)
 # Blinking Speed in seconds
-BLINK_PAUSE                      = 0.2              # Float in seconds, e.g. 0.5 for half a second
+BLINK_PAUSE                      = 0.05              # Float in seconds, e.g. 0.5 for half a second
 ISS_ANIMATION_SPEED              = 0.05             # duration of each frame for the tracking animation. 10 frames in total
 BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
 # Total blinking time in seconds.
@@ -225,8 +225,8 @@ for airport in airports_data:
         min_lon = min(min_lon, lon)
         max_lon = max(max_lon, lon)
 
-min_lon, max_lon = min_lon, max_lon
-min_lat, max_lat = min_lat, max_lat
+min_lon, max_lon = min_lon+(max_lon-min_lon)/5, max_lon-(max_lon-min_lon)/5
+min_lat, max_lat = min_lat+(max_lat-min_lat)/5, max_lat-+(max_lat-min_lat)/5
 
 try:
     with open("/home/pi/METARMap/displayairports") as f2:
