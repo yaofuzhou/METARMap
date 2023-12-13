@@ -453,10 +453,10 @@ while looplimit > 0:
 
     current_time = datetime.now()
     # Check if it's midnight on Christmas or New Year
-    if current_time.month == 12 and current_time.day == 25 and current_time.hour == 0 and current_time.minute < 15 or \
-       current_time.month == 1 and current_time.day == 1 and current_time.hour == 0 and current_time.minute < 15 or \
-       current_time.month == 7 and current_time.day == 4 and current_time.hour == 0 and current_time.minute < 15 or \
-       current_time.month == 12 and current_time.day == 13 and current_time.hour == 15 and current_time.minute < 15:
+    if (current_time.month == 12 and current_time.day == 25 and current_time.hour == 0 and current_time.minute < 15) or \
+       (current_time.month == 1 and current_time.day == 1 and current_time.hour == 0 and current_time.minute < 15) or \
+       (current_time.month == 7 and current_time.day == 4 and current_time.hour == 0 and current_time.minute < 15) or \
+       (current_time.month == 12 and current_time.day == 13 and current_time.hour == 15 and current_time.minute < 15):
         # Randomly select ISS coordinates and a ring color
         x = random.uniform(min_lon, max_lon)
         y = random.uniform(min_lat, max_lat)
