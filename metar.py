@@ -451,7 +451,7 @@ while looplimit > 0:
             print(f"Error in ISS animation: {e}")
 
 
-    current_time = datetime.datetime.now()
+    current_time = datetime.now()
     # Check if it's midnight on Christmas or New Year
     if current_time.month == 12 and current_time.day == 25 and current_time.hour == 0 and current_time.minute < 15 or \
        current_time.month == 1 and current_time.day == 1 and current_time.hour == 0 and current_time.minute < 15 or \
