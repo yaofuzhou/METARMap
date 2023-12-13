@@ -40,6 +40,8 @@ COLOR_CLEAR      = (0,0,0)        # Clear
 COLOR_LIGHTNING  = (255,255,255)  # White
 COLOR_HIGH_WINDS = (255,255,0)    # Yellow
 
+COLOR_WHITE = (255,255,255)
+
 # ----- Blink/Fade functionality for Wind and Lightning -----
 # Do you want the METARMap to be static to just show flight conditions, or do you also want blinking/fading based on current wind conditions
 ACTIVATE_WINDCONDITION_ANIMATION = True             # Set this to False for Static or True for animated wind conditions
@@ -52,9 +54,9 @@ WIND_BLINK_THRESHOLD             = 15               # Knots of windspeed to blin
 HIGH_WINDS_THRESHOLD             = 25               # Knots of windspeed to trigger Yellow LED indicating very High Winds, set to -1 if you don't want to use this
 ALWAYS_BLINK_FOR_GUSTS           = True             # Always animate for Gusts (regardless of speeds)
 # Blinking Speed in seconds
-BLINK_PAUSE                      = 0.5              # Float in seconds, e.g. 0.5 for half a second
+BLINK_PAUSE                      = 0.2              # Float in seconds, e.g. 0.5 for half a second
 ISS_ANIMATION_SPEED              = 0.05             # duration of each frame for the tracking animation. 10 frames in total
-BLINK_SPEED = ISS_ANIMATION_SPEED * 10 + BLINK_PAUSE
+BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
 # Total blinking time in seconds.
 # For example set this to 300 to keep blinking for 5 minutes if you plan to run the script every 5 minutes to fetch the updated weather
 BLINK_TOTALTIME_SECONDS          = 300
@@ -149,21 +151,21 @@ def calculate_euclidean_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
 # Function to light up LEDs based on ISS position and concentric rings with dimming effect
-def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, dimming_factor):
+def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, ring_color, dimming_factor):
     # Radii of the concentric rings
-    radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5)]
+    radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5), (5, 6), (5.5, 6.5), (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5)]
     base_brightness = 255  # Base brightness level
 
     for index, (inner_rad, outer_rad) in enumerate(radii):
         # Calculate the brightness for this ring
-        brightness = int(base_brightness * (dimming_factor ** index))
+        scaled_color = tuple(int(component * dimming_factor ** index) for component in ring_color)
 
         for i, airport in enumerate(airports_data):
             airport_x, airport_y = airport['lon'], airport['lat']  # Treat lon as x and lat as y
             distance = calculate_euclidean_distance(iss_x, iss_y, airport_x, airport_y)
             
             if inner_rad <= distance < outer_rad:
-                pixels[i] = (brightness, brightness, brightness)  # Dimmed white light
+                pixels[i] = scaled_color  # Dimmed white light
                 print(f"Lighting up {airport['code']} at pixel {i} with color {pixels[i]}")
             else:
                 pixels[i] = current_led_colors[i]  # Set to stored color
@@ -417,8 +419,8 @@ while looplimit > 0:
             iss_x = float(iss_position['longitude'])
             iss_y = float(iss_position['latitude'])
             print("ISS lat lon:", iss_y, iss_x)
-            light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, 0.85)
-            # light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, 0.85)  # for test
+            light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
+            # light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)  # for test
         except Exception as e:
             print(f"Error in ISS animation: {e}")
 
