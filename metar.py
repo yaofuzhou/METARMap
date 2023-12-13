@@ -10,6 +10,7 @@ from datetime import datetime, timedelta, time
 import math
 import csv
 import json
+import random
 
 try:
     import astral
@@ -41,6 +42,11 @@ COLOR_LIGHTNING  = (255,255,255)  # White
 COLOR_HIGH_WINDS = (255,255,0)    # Yellow
 
 COLOR_WHITE = (255,255,255)
+
+COLORS = [(0, 0, 256), (0, 127, 256), (0, 256, 0), (0, 256, 127), (0, 256, 256),
+    (127, 0, 256), (127, 127, 256), (127, 256, 0), (127, 256, 127), (127, 256, 256),
+    (256, 0, 0), (256, 0, 127), (256, 0, 256), (256, 127, 0), (256, 127, 127),
+    (256, 127, 256), (256, 256, 0), (256, 256, 127)]
 
 # ----- Blink/Fade functionality for Wind and Lightning -----
 # Do you want the METARMap to be static to just show flight conditions, or do you also want blinking/fading based on current wind conditions
@@ -202,6 +208,26 @@ with open("/home/pi/METARMap/airports.csv", newline='') as f:
             'lon': float(row['lon'])
         })
         airports.append(row['code'])
+
+# Initialize min and max values for latitude and longitude
+min_lon = min_lat = float('inf')
+max_lon = max_lat = float('-inf')
+
+for airport in airports_data:
+    lat = airport['lat']
+    lon = airport['lon']
+
+    # Update min and max values, ignoring zeros
+    if lat != 0:
+        min_lat = min(min_lat, lat)
+        max_lat = max(max_lat, lat)
+    if lon != 0:
+        min_lon = min(min_lon, lon)
+        max_lon = max(max_lon, lon)
+
+min_lon, max_lon = min_lon, max_lon
+min_lat, max_lat = min_lat, max_lat
+
 try:
     with open("/home/pi/METARMap/displayairports") as f2:
         displayairports = f2.readlines()
@@ -423,6 +449,20 @@ while looplimit > 0:
             # light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)  # for test
         except Exception as e:
             print(f"Error in ISS animation: {e}")
+
+
+    current_time = datetime.datetime.now()
+    # Check if it's midnight on Christmas or New Year
+    if current_time.month == 12 and current_time.day == 25 and current_time.hour == 0 and current_time.minute < 15 or \
+       current_time.month == 1 and current_time.day == 1 and current_time.hour == 0 and current_time.minute < 15 or \
+       current_time.month == 12 and current_time.day == 13 and current_time.hour == 6 and current_time.minute < 15 :
+        # Randomly select ISS coordinates and a ring color
+        iss_x = random.uniform(min_lon, max_lon)
+        iss_y = random.uniform(min_lat, max_lat)
+        ring_color = random.choice(COLORS)
+        # Call your light_up_iss_rings function with the randomly chosen ring_color and other parameters
+        light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, ring_color, 0.85)
+
 
     # Switching between animation cycles
     sleep(BLINK_PAUSE)
