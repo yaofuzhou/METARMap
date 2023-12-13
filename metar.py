@@ -457,11 +457,11 @@ while looplimit > 0:
        current_time.month == 1 and current_time.day == 1 and current_time.hour == 0 and current_time.minute < 15 or \
        current_time.month == 12 and current_time.day == 13 and current_time.hour == 6 and current_time.minute < 15 :
         # Randomly select ISS coordinates and a ring color
-        iss_x = random.uniform(min_lon, max_lon)
-        iss_y = random.uniform(min_lat, max_lat)
+        x = random.uniform(min_lon, max_lon)
+        y = random.uniform(min_lat, max_lat)
         ring_color = random.choice(COLORS)
         # Call your light_up_iss_rings function with the randomly chosen ring_color and other parameters
-        light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, ring_color, 0.85)
+        light_up_iss_rings(x, y, airports_data, pixels, current_led_colors, ring_color, 0.85)
 
 
     # Switching between animation cycles
