@@ -462,7 +462,7 @@ while looplimit > 0:
         y = random.uniform(min_lat, max_lat)
         ring_color = random.choice(COLORS)
         # Call your light_up_iss_rings function with the randomly chosen ring_color and other parameters
-        light_up_iss_rings(x, y, airports_data, pixels, current_led_colors, ring_color, 0.85)
+        light_up_iss_rings(x, y, airports_data, pixels, current_led_colors, ring_color, 1.0)
 
 
     # Switching between animation cycles
