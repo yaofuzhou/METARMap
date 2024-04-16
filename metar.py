@@ -293,13 +293,13 @@ for metar in root.iter('METAR'):
         rawText = metar.find('raw_text').text
         lightning = False if ((rawText.find('LTG', 4) == -1 and rawText.find('TS', 4) == -1) or rawText.find('TSNO', 4) != -1) else True
     print(stationId + ":" 
-    + flightCategory + ":" 
-    + str(windDir) + "@" + str(windSpeed) + ("G" + str(windGustSpeed) if windGust else "") + ":"
+    + str(flightCategory if flightCategory is not None else "") + ":" 
+    + (str(windDir) if windDir is not None else "") + "@" + str(windSpeed) + ("G" + str(windGustSpeed) if windGust else "") + ":"
     + str(vis) + "SM:"
-    + obs + ":"
-    + (str(tempC) if tempC else "0") + "/"
-    + (str(dewpointC) if dewpointC else "0") + ":"
-    + (str(altimHg) if altimHg else "A2992") + ":"
+    + (str(obs) if obs is not None else "") + ":"
+    + str(tempC) + "/"
+    + str(dewpointC) + ":"
+    + str(altimHg) + ":"
     + ("True" if lightning else "False"))
     conditionDict[stationId] = { "flightCategory" : flightCategory, "windDir": windDir, "windSpeed" : windSpeed, "windGustSpeed": windGustSpeed, "windGust": windGust, "vis": vis, "obs" : obs, "tempC" : tempC, "dewpointC" : dewpointC, "altimHg" : altimHg, "lightning": lightning, "skyConditions" : skyConditions, "obsTime": obsTime }
     if displayairports is None or stationId in displayairports:
