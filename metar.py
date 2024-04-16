@@ -404,6 +404,7 @@ while looplimit > 0:
             else:
                 color = COLOR_CLEAR
 
+        # print("Setting LED " + str(i) + " for " + airportcode + " to " + ("lightning " if lightningConditions else "") + ("very " if highWinds else "") + ("windy " if windy else "") + (conditions["flightCategory"] if conditions != None else "None") + " " + str(color))
         print("Setting LED " + str(i) + " for " + (airportcode if airportcode is not None else "Unknown") + " to " + 
         ("lightning " if lightningConditions else "") + 
         ("very " if highWinds else "") + 
