@@ -12,4 +12,4 @@ def get_iss_location():
 while True:
     iss_position = get_iss_location()
     print(f"ISS Location: Latitude {iss_position['latitude']}, Longitude {iss_position['longitude']}")
-    time.sleep(2)  # Wait for 2 seconds
+    time.sleep(5)  # Wait for 5 seconds
