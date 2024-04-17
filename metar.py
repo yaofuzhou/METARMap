@@ -74,6 +74,7 @@ BRIGHT_TIME_START                = time(7,0)        # Time of day to run at LED_
 DIM_TIME_START                   = time(19,0)       # Time of day to run at LED_BRIGHTNESS_DIM in hours and minutes
 USE_SUNRISE_SUNSET               = False            # Set to True if instead of fixed times for bright/dimming, you want to use local sunrise/sunset
 LOCATION                         = "Baltimore"      # Nearby city for Sunset/Sunrise timing, refer to https://astral.readthedocs.io/en/latest/#cities for list of cities supported
+TIMEZONE                         = 5                # 5 means UTC+5 = U.S. East Standard Time
 
 LED_BRIGHTNESS_DIM               = 0.2              # Float from 0.0 (min) to 1.0 (max)
 LED_BRIGHTNESS_DARK              = 0.04             # Float from 0.0 (min) to 1.0 (max)
@@ -239,8 +240,7 @@ except IOError:
 
 # Retrieve METAR from aviationweather.gov data server
 # Details about parameters can be found here: https://www.aviationweather.gov/dataserver/example?datatype=metar
-hoursBeforeNow = 5
-url = "https://aviationweather.gov/cgi-bin/data/metar.php?url_options&ids=" + ",".join([item for item in airports if item != "NULL"]) + "&format=xml&hours=" + str(hoursBeforeNow) + "&order=-obs"
+url = "https://aviationweather.gov/cgi-bin/data/metar.php?url_options&ids=" + ",".join([item for item in airports if item != "NULL"]) + "&format=xml&hours=" + str(TIMEZONE) + "&order=-obs"
 print(url)
 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36 Edg/86.0.622.69'})
 content = urllib.request.urlopen(req).read()
