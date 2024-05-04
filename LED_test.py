@@ -1,14 +1,6 @@
-import urllib.request
-import xml.etree.ElementTree as ET
 import board
 import neopixel
-import time
-from time import sleep
-from datetime import datetime, timedelta, time
-import math
 import csv
-import json
-import random
 
 # NeoPixel LED Configuration
 LED_COUNT = 150            # Number of LED pixels.
@@ -49,16 +41,25 @@ airport_codes = []
 with open("/home/pi/METARMap/airports.csv", newline='') as f:
     reader = csv.DictReader(f)
     for row in reader:
-        if row['code'] != "NULL":  # Skip "NULL" entries
-            airport_codes.append(row['code'])
+        if row['code'].strip().upper() != "NULL":  # Ensure stripping any extra whitespace and case insensitivity
+            airport_codes.append(row['code'].strip())
 
-# Set LED colors based on the cyclic pattern of defined colors or specific custom color
+print(f"Number of valid airport codes: {len(airport_codes)}")  # Debugging output
+
+# Set LED colors based on specific colors or a cyclic pattern
 for i, code in enumerate(airport_codes):
-    if code in custom_colors:
-        pixels[i] = custom_colors[code]  # Use custom color if specified
+    if i < LED_COUNT:  # Check to ensure we don't exceed the number of LEDs available
+        if code in custom_colors:
+            pixels[i] = custom_colors[code]
+        else:
+            color_index = i % len(COLORS)
+            pixels[i] = COLORS[color_index]
     else:
-        color_index = i % len(COLORS)  # Cycle through the color list
-        pixels[i] = COLORS[color_index]  # Default cyclic pattern color
+        break  # Stop if there are more airport codes than LEDs
+
+# Turn off all remaining LEDs if there are fewer airports than LEDs
+for i in range(len(airport_codes), LED_COUNT):
+    pixels[i] = COLOR_BLACK
 
 # Update the LEDs to display the colors
 pixels.show()
