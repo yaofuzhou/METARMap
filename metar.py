@@ -240,16 +240,16 @@ except IOError:
 
 # Retrieve METAR from aviationweather.gov data server
 # Details about parameters can be found here: https://www.aviationweather.gov/dataserver/example?datatype=metar
-url = "https://aviationweather.gov/cgi-bin/data/metar.php?url_options&ids=" + ",".join([item for item in airports if item != "NULL"]) + "&format=xml&hours=" + str(TIMEZONE) + "&order=-obs"
-print(url)
-req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36 Edg/86.0.622.69'})
+ids = ",".join([item for item in airports if item != "NULL"])
+url = f"https://aviationweather.gov/api/data/metar?ids={ids}&hours={TIMEZONE}&format=xml"
+
+req = urllib.request.Request(
+    url,
+    headers={"User-Agent": "metar-map/1.0 (+https://aviationweather.gov)"}
+)
 content = urllib.request.urlopen(req).read()
 
-# Retrieve flying conditions from the service response and store in a dictionary for each airport
 root = ET.fromstring(content)
-conditionDict = { "NULL": {"flightCategory" : "", "windDir": "", "windSpeed" : 0, "windGustSpeed" :  0, "windGust" : False, "lightning": False, "tempC" : 0, "dewpointC" : 0, "vis" : 0, "altimHg" : 0, "obs" : "", "skyConditions" : {}, "obsTime" : datetime.now() } }
-conditionDict.pop("NULL")
-stationList = []
 for metar in root.iter('METAR'):
     stationId = metar.find('station_id').text
     if metar.find('flight_category') is None:
