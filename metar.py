@@ -238,23 +238,35 @@ except IOError:
     print("Rotating through all airports on LED display")
     displayairports = None
 
-# Retrieve METAR from aviationweather.gov data server
+# Retrieve METAR from aviationweather.gov Data API (XML)
 # Details about parameters can be found here: https://www.aviationweather.gov/dataserver/example?datatype=metar
 ids = ",".join([item for item in airports if item != "NULL"])
 url = f"https://aviationweather.gov/api/data/metar?ids={ids}&hours={TIMEZONE}&format=xml"
+print(url)
 
 req = urllib.request.Request(
     url,
-    headers={"User-Agent": "metar-map/1.0 (+https://aviationweather.gov)"}
+    headers={"User-Agent": "METARMap/1.0 (+raspberrypi)"}
 )
 content = urllib.request.urlopen(req).read()
 
+# Parse XML and build conditionDict
 root = ET.fromstring(content)
+
+# Ensure these exist (they were missing -> NameError)
+conditionDict = {}
+stationList = []
+
 for metar in root.iter('METAR'):
-    stationId = metar.find('station_id').text
+    stationId = metar.find('station_id').text if metar.find('station_id') is not None else None
+    if not stationId:
+        continue
+
     if metar.find('flight_category') is None:
         print("Missing flight condition, skipping.")
         continue
+
+    # Defaults so we don't hit UnboundLocalError
     flightCategory = metar.find('flight_category').text
     windDir = ""
     windSpeed = 0
@@ -267,6 +279,8 @@ for metar in root.iter('METAR'):
     altimHg = 0.0
     obs = ""
     skyConditions = []
+    obsTime = datetime.now()
+
     if metar.find('wind_gust_kt') is not None:
         windGustSpeed = int(metar.find('wind_gust_kt').text)
         windGust = (True if (ALWAYS_BLINK_FOR_GUSTS or windGustSpeed > WIND_BLINK_THRESHOLD) else False)
@@ -275,35 +289,71 @@ for metar in root.iter('METAR'):
     if metar.find('wind_dir_degrees') is not None:
         windDir = metar.find('wind_dir_degrees').text
     if metar.find('temp_c') is not None:
-        tempC = int(round(float(metar.find('temp_c').text)))
+        try:
+            tempC = int(round(float(metar.find('temp_c').text)))
+        except:
+            pass
     if metar.find('dewpoint_c') is not None:
-        dewpointC = int(round(float(metar.find('dewpoint_c').text)))
+        try:
+            dewpointC = int(round(float(metar.find('dewpoint_c').text)))
+        except:
+            pass
     if metar.find('visibility_statute_mi') is not None:
-        vis = int(round(float(metar.find('visibility_statute_mi').text.replace('+', ''))))
+        try:
+            vis = int(round(float(metar.find('visibility_statute_mi').text.replace('+', ''))))
+        except:
+            pass
     if metar.find('altim_in_hg') is not None:
-        altimHg = float(round(float(metar.find('altim_in_hg').text), 2))
+        try:
+            altimHg = float(round(float(metar.find('altim_in_hg').text), 2))
+        except:
+            pass
     if metar.find('wx_string') is not None:
-        obs = metar.find('wx_string').text
+        obs = metar.find('wx_string').text or ""
     if metar.find('observation_time') is not None:
-        obsTime = datetime.fromisoformat(metar.find('observation_time').text.replace("Z","+00:00"))
+        try:
+            obsTime = datetime.fromisoformat(metar.find('observation_time').text.replace("Z","+00:00"))
+        except:
+            pass
     for skyIter in metar.iter("sky_condition"):
-        skyCond = { "cover" : skyIter.get("sky_cover"), "cloudBaseFt": int(skyIter.get("cloud_base_ft_agl", default=0)) }
+        try:
+            skyCond = { "cover" : skyIter.get("sky_cover"), "cloudBaseFt": int(skyIter.get("cloud_base_ft_agl", default=0) or 0) }
+        except:
+            skyCond = { "cover" : skyIter.get("sky_cover"), "cloudBaseFt": 0 }
         skyConditions.append(skyCond)
-    if metar.find('raw_text') is not None:
-        rawText = metar.find('raw_text').text
-        lightning = False if ((rawText.find('LTG', 4) == -1 and rawText.find('TS', 4) == -1) or rawText.find('TSNO', 4) != -1) else True
+    rawText = metar.find('raw_text').text if metar.find('raw_text') is not None else ""
+    # Lightning heuristic same as your original
+    lightning = False if ((rawText.find('LTG', 4) == -1 and rawText.find('TS', 4) == -1) or rawText.find('TSNO', 4) != -1) else True
+
     print(stationId + ":" 
-    + str(flightCategory if flightCategory is not None else "") + ":" 
-    + (str(windDir) if windDir is not None else "") + "@" + str(windSpeed) + ("G" + str(windGustSpeed) if windGust else "") + ":"
-    + str(vis) + "SM:"
-    + (str(obs) if obs is not None else "") + ":"
-    + str(tempC) + "/"
-    + str(dewpointC) + ":"
-    + str(altimHg) + ":"
-    + ("True" if lightning else "False"))
-    conditionDict[stationId] = { "flightCategory" : flightCategory, "windDir": windDir, "windSpeed" : windSpeed, "windGustSpeed": windGustSpeed, "windGust": windGust, "vis": vis, "obs" : obs, "tempC" : tempC, "dewpointC" : dewpointC, "altimHg" : altimHg, "lightning": lightning, "skyConditions" : skyConditions, "obsTime": obsTime }
+          + str(flightCategory if flightCategory is not None else "") + ":" 
+          + (str(windDir) if windDir is not None else "") + "@" + str(windSpeed) + ("G" + str(windGustSpeed) if windGust else "") + ":"
+          + str(vis) + "SM:"
+          + (str(obs) if obs is not None else "") + ":"
+          + str(tempC) + "/"
+          + str(dewpointC) + ":"
+          + str(altimHg) + ":"
+          + ("True" if lightning else "False"))
+
+    conditionDict[stationId] = {
+        "flightCategory": flightCategory,
+        "windDir": windDir,
+        "windSpeed": windSpeed,
+        "windGustSpeed": windGustSpeed,
+        "windGust": windGust,
+        "vis": vis,
+        "obs": obs,
+        "tempC": tempC,
+        "dewpointC": dewpointC,
+        "altimHg": altimHg,
+        "lightning": lightning,
+        "skyConditions": skyConditions,
+        "obsTime": obsTime
+    }
+
     if displayairports is None or stationId in displayairports:
         stationList.append(stationId)
+
 
 # Read data from 'suntimes.csv' file
 with open('suntimes.csv', newline='') as f:
