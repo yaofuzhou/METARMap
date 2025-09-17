@@ -22,7 +22,7 @@ except ImportError:
 # -------------------------
 VERBOSE = False  # When False, suppresses per-LED and per-station prints
 
-# metar.py script iteration 1.5.2 (adds VERBOSE flag + new API endpoint)
+# metar.py script iteration 1.6.0 (adds boot splash + VERBOSE flag + new API endpoint)
 
 # ---------------------------------------------------------------------------
 # ------------START OF CONFIGURATION-----------------------------------------
@@ -77,6 +77,14 @@ TIMEZONE                         = 5  # hours to look back in METAR query
 LED_BRIGHTNESS_DIM               = 0.2
 LED_BRIGHTNESS_DARK              = 0.04
 CONTINUOUS_BRIGHTNESS            = True
+
+# ----- Boot splash (center-of-mass ripple) -----
+SPLASH_ENABLED     = True
+SPLASH_COLOR       = COLOR_WHITE   # boot splash color
+SPLASH_RING_STEP   = 0.75          # “thickness” of each ring in lon/lat distance units
+SPLASH_DECAY       = 0.85          # dim per ring
+SPLASH_FRAME_DELAY = 0.04          # seconds between frames
+SPLASH_PAUSE_AFTER = 0.10          # small clear pause after splash
 
 # ----- Show a set of Legend LEDS at the end -----
 SHOW_LEGEND = False
@@ -147,35 +155,106 @@ def should_update_iss_position():
         return True
     return False
 
-# Function to calculate Euclidean distance between two points (x1, y1) and (x2, y2)
+# Geometry helper
 def calculate_euclidean_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
-# Function to light up LEDs based on ISS position and concentric rings with dimming effect
+# ISS ripple (blocking, as before)
 def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, ring_color, dimming_factor):
-    # Radii of the concentric rings
     radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5), (5, 6), (5.5, 6.5), (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5)]
     for index, (inner_rad, outer_rad) in enumerate(radii):
         scaled_color = tuple(int(component * dimming_factor ** index) for component in ring_color)
         for i, airport in enumerate(airports_data):
+            if i >= LED_COUNT:
+                break
             airport_x, airport_y = airport['lon'], airport['lat']
             distance = calculate_euclidean_distance(iss_x, iss_y, airport_x, airport_y)
             if inner_rad <= distance < outer_rad:
                 pixels[i] = scaled_color
-                if VERBOSE:
-                    print(f"Lighting up {airport['code']} at pixel {i} with color {pixels[i]}")
             else:
                 pixels[i] = current_led_colors[i]
         pixels.show()
-        sleep(ISS_ANIMATION_SPEED)  # blocking animation by design
+        sleep(ISS_ANIMATION_SPEED)
 
         # After the last ring, restore the LEDs to their original state
         if index == len(radii) - 1:
-            for i, color in enumerate(current_led_colors):
+            for i, color in enumerate(current_led_colors[:LED_COUNT]):
                 pixels[i] = color
             pixels.show()
 
-# Initialize the LED strip
+# -------------------------
+# Boot Splash (center-of-mass ripple)
+# -------------------------
+def play_boot_splash(pixels, airports_data, color=SPLASH_COLOR, ring_step=SPLASH_RING_STEP,
+                     decay=SPLASH_DECAY, frame_delay=SPLASH_FRAME_DELAY, pause_after=SPLASH_PAUSE_AFTER):
+    """
+    Computes the center of mass (average lon/lat) of all airports, then
+    renders a ripple that expands outward in rings and then collapses inward.
+    Runs before any weather display.
+    """
+    if not airports_data:
+        return
+
+    # Compute center of mass (exclude zeros if present)
+    xs = [a['lon'] for a in airports_data if a.get('lon') not in (None, 0)]
+    ys = [a['lat'] for a in airports_data if a.get('lat') not in (None, 0)]
+    if not xs or not ys:
+        return
+    cx = sum(xs) / len(xs)
+    cy = sum(ys) / len(ys)
+
+    # Precompute distances from center to each airport’s LED index
+    dists = []
+    for i, a in enumerate(airports_data):
+        if i >= LED_COUNT:
+            break
+        d = calculate_euclidean_distance(cx, cy, a['lon'], a['lat'])
+        dists.append(d)
+
+    if not dists:
+        return
+
+    maxd = max(dists)
+    # Clear all LEDs first
+    for i in range(min(len(airports_data), LED_COUNT)):
+        pixels[i] = COLOR_CLEAR
+    pixels.show()
+
+    # Outward ripple
+    ring_idx = 0
+    r = 0.0
+    while r <= (maxd + ring_step):
+        scaled = tuple(int(c * (decay ** ring_idx)) for c in color)
+        for i in range(min(len(dists), LED_COUNT)):
+            pixels[i] = scaled if (r <= dists[i] < r + ring_step) else COLOR_CLEAR
+        pixels.show()
+        time.sleep(frame_delay)
+        r += ring_step
+        ring_idx += 1
+
+    # Inward ripple
+    ring_idx = 0
+    r = maxd
+    while r >= 0.0:
+        scaled = tuple(int(c * (decay ** ring_idx)) for c in color)
+        inner = max(0.0, r - ring_step)
+        for i in range(min(len(dists), LED_COUNT)):
+            pixels[i] = scaled if (inner <= dists[i] < r) else COLOR_CLEAR
+        pixels.show()
+        time.sleep(frame_delay)
+        r -= ring_step
+        ring_idx += 1
+
+    # Clear and brief pause
+    for i in range(min(len(airports_data), LED_COUNT)):
+        pixels[i] = COLOR_CLEAR
+    pixels.show()
+    time.sleep(pause_after)
+
+# -------------------------
+# Program start
+# -------------------------
+print("Initializing LEDs...")
 bright = BRIGHT_TIME_START < datetime.now().time() < DIM_TIME_START
 pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, pixel_order=LED_ORDER, auto_write=False)
 
@@ -192,10 +271,9 @@ with open("/home/pi/METARMap/airports.csv", newline='') as f:
         })
         airports.append(row['code'])
 
-# Initialize min and max values for latitude and longitude
+# Initialize min and max values for latitude and longitude (for holiday sparkle bounds)
 min_lon = min_lat = float('inf')
 max_lon = max_lat = float('-inf')
-
 for airport in airports_data:
     lat = airport['lat']
     lon = airport['lon']
@@ -205,10 +283,10 @@ for airport in airports_data:
     if lon != 0:
         min_lon = min(min_lon, lon)
         max_lon = max(max_lon, lon)
-
 min_lon, max_lon = min_lon+(max_lon-min_lon)/5, max_lon-(max_lon-min_lon)/5
 min_lat, max_lat = min_lat+(max_lat-min_lat)/5, max_lat-+(max_lat-min_lat)/5
 
+# display subset (if any)
 try:
     with open("/home/pi/METARMap/displayairports") as f2:
         displayairports = f2.readlines()
@@ -217,6 +295,14 @@ try:
 except IOError:
     print("Rotating through all airports on LED display")
     displayairports = None
+
+# -------------------------
+# Boot splash before weather is shown
+# -------------------------
+if SPLASH_ENABLED:
+    if VERBOSE:
+        print("Playing boot splash...")
+    play_boot_splash(pixels, airports_data)
 
 # ---------------------------------------------------------------------------
 # Retrieve METAR from aviationweather.gov Data API (XML) — minimal change
@@ -233,8 +319,6 @@ content = urllib.request.urlopen(req, timeout=10).read()
 
 # Parse XML and build conditionDict
 root = ET.fromstring(content)
-
-# Ensure these exist before writing entries
 conditionDict = {}
 stationList = []
 
@@ -368,6 +452,7 @@ windCycle = False
 displayTime = 0.0
 displayAirportCounter = 0
 numAirports = len(stationList)
+
 while looplimit > 0:
     i = 0
     for airportcode in airports:
@@ -486,11 +571,9 @@ while looplimit > 0:
         try:
             iss_x = float(iss_position['longitude'])
             iss_y = float(iss_position['latitude'])
-            # if VERBOSE:
-            print("ISS lat lon:", iss_y, iss_x)
+            if VERBOSE:
+                print("ISS lat lon:", iss_y, iss_x)
             light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
-            # For testing a fixed location:
-            # light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
         except Exception as e:
             if VERBOSE:
                 print(f"Error in ISS animation: {e}")
