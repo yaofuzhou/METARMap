@@ -5,8 +5,8 @@ import xml.etree.ElementTree as ET
 import board
 import neopixel
 import time
-from time import sleep, perf_counter
-from datetime import datetime, timedelta, time as dtime
+from time import sleep
+from datetime import datetime, timedelta, time
 import math
 import csv
 import json
@@ -17,17 +17,17 @@ try:
 except ImportError:
     astral = None
 
-# ======================================================================
-# Configuration
-# ======================================================================
+# metar.py script iteration 1.5.1
 
-VERBOSE = False  # set True for debug prints and LED timing line
+# ---------------------------------------------------------------------------
+# ------------START OF CONFIGURATION-----------------------------------------
+# ---------------------------------------------------------------------------
 
 # NeoPixel LED Configuration
-LED_COUNT        = 150
-LED_PIN          = board.D18
-LED_BRIGHTNESS   = 1.0
-LED_ORDER        = neopixel.GRB
+LED_COUNT        = 150            # Number of LED pixels.
+LED_PIN          = board.D18      # GPIO pin connected to the pixels (18 is PCM).
+LED_BRIGHTNESS   = 1.0            # Float from 0.0 (min) to 1.0 (max)
+LED_ORDER        = neopixel.GRB   # Strip type and colour ordering
 
 COLOR_VFR        = (255,0,0)      # Green
 COLOR_VFR_FADE   = (125,0,0)      # Green Fade for wind
@@ -43,73 +43,81 @@ COLOR_HIGH_WINDS = (255,255,0)    # Yellow
 
 COLOR_WHITE = (255,255,255)
 
-COLORS = [
-    (0, 0, 255), (0, 127, 255), (0, 255, 0), (0, 255, 127), (0, 255, 255),
+COLORS = [(0, 0, 255), (0, 127, 255), (0, 255, 0), (0, 255, 127), (0, 255, 255),
     (127, 0, 255), (127, 127, 255), (127, 255, 0), (127, 255, 127), (127, 255, 255),
     (255, 0, 0), (255, 0, 127), (255, 0, 255), (255, 127, 0), (255, 127, 127),
-    (255, 127, 255), (255, 255, 0), (255, 255, 127)
-]
+    (255, 127, 255), (255, 255, 0), (255, 255, 127)]
 
-# Wind/Lightning animation
-ACTIVATE_WINDCONDITION_ANIMATION = True
-ACTIVATE_LIGHTNING_ANIMATION     = True
-FADE_INSTEAD_OF_BLINK            = True
-WIND_BLINK_THRESHOLD             = 15
-HIGH_WINDS_THRESHOLD             = 25
-ALWAYS_BLINK_FOR_GUSTS           = True
-BLINK_PAUSE                      = 0.05  # seconds per main frame
-
-# ISS animation timing (blocking ripple like original)
-ISS_ANIMATION_SPEED              = 0.05  # seconds per ring
-# 16 rings x 0.05s ~= 0.8s blocking ripple
-
-# Total blinking time for wind/lightning (seconds)
+# ----- Blink/Fade functionality for Wind and Lightning -----
+# Do you want the METARMap to be static to just show flight conditions, or do you also want blinking/fading based on current wind conditions
+ACTIVATE_WINDCONDITION_ANIMATION = True             # Set this to False for Static or True for animated wind conditions
+#Do you want the Map to Flash white for lightning in the area
+ACTIVATE_LIGHTNING_ANIMATION     = True             # Set this to False for Static or True for animated Lightning
+# Fade instead of blink
+FADE_INSTEAD_OF_BLINK            = True             # Set to False if you want blinking
+# Blinking Windspeed Threshold
+WIND_BLINK_THRESHOLD             = 15               # Knots of windspeed to blink/fade
+HIGH_WINDS_THRESHOLD             = 25               # Knots of windspeed to trigger Yellow LED indicating very High Winds, set to -1 if you don't want to use this
+ALWAYS_BLINK_FOR_GUSTS           = True             # Always animate for Gusts (regardless of speeds)
+# Blinking Speed in seconds
+BLINK_PAUSE                      = 0.05              # Float in seconds, e.g. 0.5 for half a second
+ISS_ANIMATION_SPEED              = 0.05             # duration of each frame for the tracking animation. 10 frames in total
+BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
+# Total blinking time in seconds.
+# For example set this to 300 to keep blinking for 5 minutes if you plan to run the script every 5 minutes to fetch the updated weather
 BLINK_TOTALTIME_SECONDS          = 300
 
-# Daytime dimming
-ACTIVATE_DAYTIME_DIMMING         = False
-USE_DYNAMIC_SUNTIME              = True
-BRIGHT_TIME_START                = dtime(7,0)
-DIM_TIME_START                   = dtime(19,0)
-USE_SUNRISE_SUNSET               = False
-LOCATION                         = "Baltimore"
-TIMEZONE                         = 5  # hours window for METAR query (as in original code)
+# ----- Daytime dimming of LEDs based on time of day or Sunset/Sunrise -----
+ACTIVATE_DAYTIME_DIMMING         = False             # Set to True if you want to dim the map after a certain time of day
+USE_DYNAMIC_SUNTIME              = True             # Set to True if the brightness of each LED is adjusted according to its local twilight, sunrise, and sunset times.
+BRIGHT_TIME_START                = time(7,0)        # Time of day to run at LED_BRIGHTNESS in hours and minutes
+DIM_TIME_START                   = time(19,0)       # Time of day to run at LED_BRIGHTNESS_DIM in hours and minutes
+USE_SUNRISE_SUNSET               = False            # Set to True if instead of fixed times for bright/dimming, you want to use local sunrise/sunset
+LOCATION                         = "Baltimore"      # Nearby city for Sunset/Sunrise timing, refer to https://astral.readthedocs.io/en/latest/#cities for list of cities supported
+TIMEZONE                         = 5                # 5 means UTC+5 = U.S. East Standard Time
 
-LED_BRIGHTNESS_DIM               = 0.2
-LED_BRIGHTNESS_DARK              = 0.04
-CONTINUOUS_BRIGHTNESS            = True
+LED_BRIGHTNESS_DIM               = 0.2              # Float from 0.0 (min) to 1.0 (max)
+LED_BRIGHTNESS_DARK              = 0.04             # Float from 0.0 (min) to 1.0 (max)
+CONTINUOUS_BRIGHTNESS            = True             # If set to True, brightness in the twilight zone will vary continuously between LED_BRIGHTNESS_DIM and LED_BRIGHTNESS_DARK
 
-# Legend
-SHOW_LEGEND = False
+# ----- Show a set of Legend LEDS at the end -----
+SHOW_LEGEND = False            # Set to true if you want to have a set of LEDs at the end show the legend
+# You'll need to add 7 LEDs at the end of your string of LEDs
+# If you want to offset the legend LEDs from the end of the last airport from the airports file,
+# then change this offset variable by the number of LEDs to skip before the LED that starts the legend
 OFFSET_LEGEND_BY = 0
+# The order of LEDs is:
+#    VFR
+#    MVFR
+#    IFR
+#    LIFR
+#    LIGHTNING
+#    WINDY
+#    HIGH WINDS
 
-# ======================================================================
-# Startup logging
-# ======================================================================
+
+# ---------------------------------------------------------------------------
+# ------------END OF CONFIGURATION-------------------------------------------
+# ---------------------------------------------------------------------------
 
 print("Running metar.py at " + datetime.now().strftime('%d/%m/%Y %H:%M'))
-print("Wind animation:" + str(ACTIVATE_WINDCONDITION_ANIMATION))
-print("Lightning animation:" + str(ACTIVATE_LIGHTNING_ANIMATION))
-print("Daytime Dimming:" + str(ACTIVATE_DAYTIME_DIMMING) + (" using Sunrise/Sunset" if USE_SUNRISE_SUNSET and ACTIVATE_DAYTIME_DIMMING else ""))
 
-# ======================================================================
-# Sunrise/sunset (optional)
-# ======================================================================
-
+# Figure out sunrise/sunset times if astral is being used
 if astral is not None and USE_SUNRISE_SUNSET:
     try:
-        # Astral 1.x
+        # For older clients running python 3.5 which are using Astral 1.10.1
         ast = astral.Astral()
         try:
             city = ast[LOCATION]
         except KeyError:
             print("Error: Location not recognized, please check list of supported cities and reconfigure")
         else:
+            print(city)
             sun = city.sun(date = datetime.now().date(), local = True)
             BRIGHT_TIME_START = sun['sunrise'].time()
             DIM_TIME_START = sun['sunset'].time()
     except AttributeError:
-        # Astral 2.x
+        # newer Raspberry Pi versions using Python 3.6+ using Astral 2.2
         import astral.geocoder
         import astral.sun
         try:
@@ -117,26 +125,24 @@ if astral is not None and USE_SUNRISE_SUNSET:
         except KeyError:
             print("Error: Location not recognized, please check list of supported cities and reconfigure")
         else:
+            print(city)
             sun = astral.sun.sun(city.observer, date = datetime.now().date(), tzinfo=city.timezone)
             BRIGHT_TIME_START = sun['sunrise'].time()
             DIM_TIME_START = sun['sunset'].time()
     print("Sunrise:" + BRIGHT_TIME_START.strftime('%H:%M') + " Sunset:" + DIM_TIME_START.strftime('%H:%M'))
 
-# ======================================================================
-# ISS helpers (blocking animation like the original)
-# ======================================================================
-
+# Global variable to store the last ISS position update time
 last_iss_update_time = datetime.min
+iss_position = None
 
 def get_iss_location():
     url = "http://api.open-notify.org/iss-now.json"
     try:
-        with urllib.request.urlopen(url, timeout=5) as response:
+        with urllib.request.urlopen(url) as response:
             data = json.loads(response.read().decode())
             return data['iss_position']
     except Exception as e:
-        if VERBOSE:
-            print("Error fetching ISS location:", e)
+        print(f"Error fetching ISS location: {e}")
         return None
 
 def should_update_iss_position():
@@ -147,46 +153,51 @@ def should_update_iss_position():
         return True
     return False
 
+# Function to calculate Euclidean distance between two points (x1, y1) and (x2, y2)
 def calculate_euclidean_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
-# Blocking ISS ripple exactly like before (16 rings, per-ring sleep)
+# Function to light up LEDs based on ISS position and concentric rings with dimming effect
 def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, ring_color, dimming_factor):
-    radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5),
-             (4, 5), (4.5, 5.5), (5, 6), (5.5, 6.5), (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5)]
+    # Radii of the concentric rings
+    radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5), (5, 6), (5.5, 6.5), (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5)]
+    base_brightness = 255  # Base brightness level
+
     for index, (inner_rad, outer_rad) in enumerate(radii):
-        scaled_color = tuple(int(component * (dimming_factor ** index)) for component in ring_color)
+        # Calculate the brightness for this ring
+        scaled_color = tuple(int(component * dimming_factor ** index) for component in ring_color)
+
         for i, airport in enumerate(airports_data):
-            ax, ay = airport['lon'], airport['lat']
-            d = calculate_euclidean_distance(iss_x, iss_y, ax, ay)
-            if inner_rad <= d < outer_rad:
-                pixels[i] = scaled_color
+            airport_x, airport_y = airport['lon'], airport['lat']  # Treat lon as x and lat as y
+            distance = calculate_euclidean_distance(iss_x, iss_y, airport_x, airport_y)
+            
+            if inner_rad <= distance < outer_rad:
+                pixels[i] = scaled_color  # Dimmed white light
+                print(f"Lighting up {airport['code']} at pixel {i} with color {pixels[i]}")
             else:
-                pixels[i] = current_led_colors[i]
+                pixels[i] = current_led_colors[i]  # Set to stored color
         pixels.show()
-        sleep(ISS_ANIMATION_SPEED)
+        sleep(ISS_ANIMATION_SPEED)  # Each ring lasts 0.05 seconds
 
-    # restore LEDs to their original state
-    for i, color in enumerate(current_led_colors):
-        pixels[i] = color
-    pixels.show()
+        # After the last ring, restore the LEDs to their original state
+        if index == len(radii) - 1:  # Check if it's the last ring
+            for i, color in enumerate(current_led_colors):
+                pixels[i] = color
+            pixels.show()
 
-# ======================================================================
-# Initialize LEDs
-# ======================================================================
 
+
+
+# Initialize the LED strip
 bright = BRIGHT_TIME_START < datetime.now().time() < DIM_TIME_START
-pixels = neopixel.NeoPixel(
-    LED_PIN, LED_COUNT,
-    brightness = LED_BRIGHTNESS,
-    pixel_order = LED_ORDER,
-    auto_write = False
-)
+print("Wind animation:" + str(ACTIVATE_WINDCONDITION_ANIMATION))
+print("Lightning animation:" + str(ACTIVATE_LIGHTNING_ANIMATION))
+print("Daytime Dimming:" + str(ACTIVATE_DAYTIME_DIMMING) + (" using Sunrise/Sunset" if USE_SUNRISE_SUNSET and ACTIVATE_DAYTIME_DIMMING else ""))
+# pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness = LED_BRIGHTNESS_DARK if (ACTIVATE_DAYTIME_DIMMING and bright == False) else LED_BRIGHTNESS, pixel_order = LED_ORDER, auto_write = False)
+pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, pixel_order=LED_ORDER, auto_write=False)
 
-# ======================================================================
-# Load airports
-# ======================================================================
 
+# Read the airports file and store latitude and longitude
 airports_data = []
 airports = []
 with open("/home/pi/METARMap/airports.csv", newline='') as f:
@@ -199,46 +210,50 @@ with open("/home/pi/METARMap/airports.csv", newline='') as f:
         })
         airports.append(row['code'])
 
-# Determine bounding box for ISS holiday animation
+# Initialize min and max values for latitude and longitude
 min_lon = min_lat = float('inf')
 max_lon = max_lat = float('-inf')
+
 for airport in airports_data:
     lat = airport['lat']
     lon = airport['lon']
+
+    # Update min and max values, ignoring zeros
     if lat != 0:
         min_lat = min(min_lat, lat)
         max_lat = max(max_lat, lat)
     if lon != 0:
         min_lon = min(min_lon, lon)
         max_lon = max(max_lon, lon)
+
 min_lon, max_lon = min_lon+(max_lon-min_lon)/5, max_lon-(max_lon-min_lon)/5
 min_lat, max_lat = min_lat+(max_lat-min_lat)/5, max_lat-+(max_lat-min_lat)/5
 
 try:
     with open("/home/pi/METARMap/displayairports") as f2:
-        displayairports = [x.strip() for x in f2.readlines()]
+        displayairports = f2.readlines()
+    displayairports = [x.strip() for x in displayairports]
     print("Using subset airports for LED display")
 except IOError:
     print("Rotating through all airports on LED display")
     displayairports = None
 
-# ======================================================================
-# Fetch METARs from new AWC Data API (XML) and build conditionDict
-# ======================================================================
-
+# Retrieve METAR from aviationweather.gov Data API (XML)
+# Details about parameters can be found here: https://www.aviationweather.gov/dataserver/example?datatype=metar
 ids = ",".join([item for item in airports if item != "NULL"])
 url = f"https://aviationweather.gov/api/data/metar?ids={ids}&hours={TIMEZONE}&format=xml"
-if VERBOSE:
-    print(url)
+print(url)
 
 req = urllib.request.Request(
     url,
     headers={"User-Agent": "METARMap/1.0 (+raspberrypi)"}
 )
-content = urllib.request.urlopen(req, timeout=10).read()
+content = urllib.request.urlopen(req).read()
 
+# Parse XML and build conditionDict
 root = ET.fromstring(content)
 
+# Ensure these exist (they were missing -> NameError)
 conditionDict = {}
 stationList = []
 
@@ -246,11 +261,12 @@ for metar in root.iter('METAR'):
     stationId = metar.find('station_id').text if metar.find('station_id') is not None else None
     if not stationId:
         continue
+
     if metar.find('flight_category') is None:
-        if VERBOSE:
-            print("Missing flight condition, skipping", stationId)
+        print("Missing flight condition, skipping.")
         continue
 
+    # Defaults so we don't hit UnboundLocalError
     flightCategory = metar.find('flight_category').text
     windDir = ""
     windSpeed = 0
@@ -266,18 +282,12 @@ for metar in root.iter('METAR'):
     obsTime = datetime.now()
 
     if metar.find('wind_gust_kt') is not None:
-        try:
-            windGustSpeed = int(metar.find('wind_gust_kt').text)
-            windGust = (True if (ALWAYS_BLINK_FOR_GUSTS or windGustSpeed > WIND_BLINK_THRESHOLD) else False)
-        except:
-            pass
+        windGustSpeed = int(metar.find('wind_gust_kt').text)
+        windGust = (True if (ALWAYS_BLINK_FOR_GUSTS or windGustSpeed > WIND_BLINK_THRESHOLD) else False)
     if metar.find('wind_speed_kt') is not None:
-        try:
-            windSpeed = int(metar.find('wind_speed_kt').text)
-        except:
-            pass
+        windSpeed = int(metar.find('wind_speed_kt').text)
     if metar.find('wind_dir_degrees') is not None:
-        windDir = metar.find('wind_dir_degrees').text or ""
+        windDir = metar.find('wind_dir_degrees').text
     if metar.find('temp_c') is not None:
         try:
             tempC = int(round(float(metar.find('temp_c').text)))
@@ -307,31 +317,23 @@ for metar in root.iter('METAR'):
             pass
     for skyIter in metar.iter("sky_condition"):
         try:
-            base = skyIter.get("cloud_base_ft_agl", default=0)
-        except TypeError:
-            base = skyIter.get("cloud_base_ft_agl")
-        try:
-            base = int(base or 0)
+            skyCond = { "cover" : skyIter.get("sky_cover"), "cloudBaseFt": int(skyIter.get("cloud_base_ft_agl", default=0) or 0) }
         except:
-            base = 0
-        skyCond = { "cover" : skyIter.get("sky_cover"), "cloudBaseFt": base }
+            skyCond = { "cover" : skyIter.get("sky_cover"), "cloudBaseFt": 0 }
         skyConditions.append(skyCond)
-
     rawText = metar.find('raw_text').text if metar.find('raw_text') is not None else ""
+    # Lightning heuristic same as your original
     lightning = False if ((rawText.find('LTG', 4) == -1 and rawText.find('TS', 4) == -1) or rawText.find('TSNO', 4) != -1) else True
 
-    if VERBOSE:
-        print(
-            stationId + ":" 
-            + str(flightCategory if flightCategory is not None else "") + ":" 
-            + (str(windDir) if windDir is not None else "") + "@" + str(windSpeed) + ("G" + str(windGustSpeed) if windGust else "") + ":"
-            + str(vis) + "SM:"
-            + (str(obs) if obs is not None else "") + ":"
-            + str(tempC) + "/"
-            + str(dewpointC) + ":"
-            + str(altimHg) + ":"
-            + ("True" if lightning else "False")
-        )
+    print(stationId + ":" 
+          + str(flightCategory if flightCategory is not None else "") + ":" 
+          + (str(windDir) if windDir is not None else "") + "@" + str(windSpeed) + ("G" + str(windGustSpeed) if windGust else "") + ":"
+          + str(vis) + "SM:"
+          + (str(obs) if obs is not None else "") + ":"
+          + str(tempC) + "/"
+          + str(dewpointC) + ":"
+          + str(altimHg) + ":"
+          + ("True" if lightning else "False"))
 
     conditionDict[stationId] = {
         "flightCategory": flightCategory,
@@ -352,14 +354,13 @@ for metar in root.iter('METAR'):
     if displayairports is None or stationId in displayairports:
         stationList.append(stationId)
 
-# ======================================================================
-# Load suntimes.csv (optional dimming)
-# ======================================================================
 
+# Read data from 'suntimes.csv' file
 with open('suntimes.csv', newline='') as f:
     reader = csv.DictReader(f)
     suntimes = {row['code']: row for row in reader}
 
+# Update dictionaries in 'conditionDict' with data from 'suntimes.csv'
 for stationId, conditions in conditionDict.items():
     if stationId in suntimes:
         conditions.update({
@@ -369,23 +370,17 @@ for stationId, conditions in conditionDict.items():
             'twilight_end': suntimes[stationId]['twilight_end']
         })
 
-# ======================================================================
-# Main loop (blocking ISS ripple to preserve original cadence)
-# ======================================================================
-
-# Approximate loop period: ripple (16*ISS_ANIMATION_SPEED) + BLINK_PAUSE
-BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
+# Setting LED colors based on weather conditions
 looplimit = int(round(BLINK_TOTALTIME_SECONDS / BLINK_SPEED)) if (ACTIVATE_WINDCONDITION_ANIMATION or ACTIVATE_LIGHTNING_ANIMATION) else 1
 
 windCycle = False
 displayTime = 0.0
 displayAirportCounter = 0
 numAirports = len(stationList)
-
 while looplimit > 0:
     i = 0
-    # Draw base colors from METAR
     for airportcode in airports:
+        # Skip NULL entries
         if airportcode == "NULL":
             i += 1
             continue
@@ -405,6 +400,7 @@ while looplimit > 0:
             t2 = datetime.strptime(conditions['sunrise'], '%H:%M:%S').time()
             t3 = datetime.strptime(conditions['sunset'], '%H:%M:%S').time()
             t4 = datetime.strptime(conditions['twilight_end'], '%H:%M:%S').time()
+            # Convert t1, t2, t3, and t4 to datetime objects with today's date
             t1 = datetime.combine(today, t1)
             t2 = datetime.combine(today, t2)
             t3 = datetime.combine(today, t3)
@@ -420,7 +416,8 @@ while looplimit > 0:
 
         t = current_utc_datetime
 
-        if conditions is not None:
+        if conditions != None:
+            # Check the position of t relative to t1, t2, t3, and t4
             if t < t1:
                 brightness_adjustment = LED_BRIGHTNESS_DARK
             elif t1 <= t < t2:
@@ -443,11 +440,9 @@ while looplimit > 0:
                     brightness_adjustment = LED_BRIGHTNESS_DIM
             else:
                 brightness_adjustment = LED_BRIGHTNESS_DARK
-
-            windy = True if (ACTIVATE_WINDCONDITION_ANIMATION and windCycle and (conditions["windSpeed"] >= WIND_BLINK_THRESHOLD or conditions["windGust"])) else False
+            windy = True if (ACTIVATE_WINDCONDITION_ANIMATION and windCycle == True and (conditions["windSpeed"] >= WIND_BLINK_THRESHOLD or conditions["windGust"] == True)) else False
             highWinds = True if (windy and HIGH_WINDS_THRESHOLD != -1 and (conditions["windSpeed"] >= HIGH_WINDS_THRESHOLD or conditions["windGustSpeed"] >= HIGH_WINDS_THRESHOLD)) else False
-            lightningConditions = True if (ACTIVATE_LIGHTNING_ANIMATION and (not windCycle) and conditions["lightning"]) else False
-
+            lightningConditions = True if (ACTIVATE_LIGHTNING_ANIMATION and windCycle == False and conditions["lightning"] == True) else False
             if conditions["flightCategory"] == "VFR":
                 color = COLOR_VFR if not (windy or lightningConditions) else COLOR_LIGHTNING if lightningConditions else COLOR_HIGH_WINDS if highWinds else (COLOR_VFR_FADE if FADE_INSTEAD_OF_BLINK else COLOR_CLEAR) if windy else COLOR_CLEAR
             elif conditions["flightCategory"] == "MVFR":
@@ -459,6 +454,17 @@ while looplimit > 0:
             else:
                 color = COLOR_CLEAR
 
+        print(f"Setting LED {i} for {airportcode or 'Unknown'} to " +
+        f"{'lightning ' if lightningConditions else ''}" +
+        f"{'very ' if highWinds else ''}" +
+        f"{'windy ' if windy else ''}" +
+        f"{conditions.get('flightCategory', 'None') if conditions else 'None'} " +
+        f"{color if color is not None else 'No Color'}")
+
+
+
+        print("brightness_adjustment =", brightness_adjustment)
+
         if USE_DYNAMIC_SUNTIME:
             g, r, b = color
             g = int(float(g) * brightness_adjustment)
@@ -467,62 +473,59 @@ while looplimit > 0:
             pixels[i] = (g, r, b)
         else:
             pixels[i] = color
-
         i += 1
 
-    # Legend (unchanged)
+    # Legend
     if SHOW_LEGEND:
         pixels[i + OFFSET_LEGEND_BY] = COLOR_VFR
         pixels[i + OFFSET_LEGEND_BY + 1] = COLOR_MVFR
         pixels[i + OFFSET_LEGEND_BY + 2] = COLOR_IFR
         pixels[i + OFFSET_LEGEND_BY + 3] = COLOR_LIFR
-        if ACTIVATE_LIGHTNING_ANIMATION:
-            pixels[i + OFFSET_LEGEND_BY + 4] = COLOR_LIGHTNING if windCycle else COLOR_VFR
-        if ACTIVATE_WINDCONDITION_ANIMATION:
-            pixels[i + OFFSET_LEGEND_BY + 5] = COLOR_VFR if not windCycle else (COLOR_VFR_FADE if FADE_INSTEAD_OF_BLINK else COLOR_CLEAR)
+        if ACTIVATE_LIGHTNING_ANIMATION == True:
+            pixels[i + OFFSET_LEGEND_BY + 4] = COLOR_LIGHTNING if windCycle else COLOR_VFR # lightning
+        if ACTIVATE_WINDCONDITION_ANIMATION == True:
+            pixels[i+ OFFSET_LEGEND_BY + 5] = COLOR_VFR if not windCycle else (COLOR_VFR_FADE if FADE_INSTEAD_OF_BLINK else COLOR_CLEAR)    # windy
             if HIGH_WINDS_THRESHOLD != -1:
-                pixels[i + OFFSET_LEGEND_BY + 6] = COLOR_VFR if not windCycle else COLOR_HIGH_WINDS
+                pixels[i + OFFSET_LEGEND_BY + 6] = COLOR_VFR if not windCycle else COLOR_HIGH_WINDS  # high winds
 
-    # ---- Blocking ISS ripple to preserve original cadence ----
+    # Update actual LEDs all at once
+    pixels.show()
+
     current_led_colors = [pixels[i] for i in range(LED_COUNT)]
-    did_iss_anim = False
 
+    # Check if it's time to update ISS position
     if should_update_iss_position():
         iss_position = get_iss_location()
-        if iss_position:
-            try:
-                iss_x = float(iss_position['longitude'])
-                iss_y = float(iss_position['latitude'])
-                light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
-                did_iss_anim = True
-            except Exception as e:
-                if VERBOSE:
-                    print("Error in ISS animation:", e)
 
-    # Holiday random ISS-style rings (same blocking ripple behavior)
+    if iss_position:
+        try:
+            iss_x = float(iss_position['longitude'])
+            iss_y = float(iss_position['latitude'])
+            print("ISS lat lon:", iss_y, iss_x)
+            light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
+            # light_up_iss_rings(-80.3944, 36.66505, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)  # for test
+        except Exception as e:
+            print(f"Error in ISS animation: {e}")
+
+
     current_time = datetime.now()
-    holiday_trigger = (
-        (current_time.month == 12 and current_time.day == 25 and current_time.hour == 0 and current_time.minute < 15) or
-        (current_time.month == 1 and current_time.day == 1 and current_time.hour == 0 and current_time.minute < 15) or
-        (current_time.month == 7 and current_time.day == 4 and current_time.hour == 0 and current_time.minute < 15) or
-        (current_time.month == 12 and current_time.day == 13 and current_time.hour == 15 and current_time.minute < 15)
-    )
-    if holiday_trigger and not did_iss_anim:
+    # Check if it's midnight on Christmas or New Year
+    if (current_time.month == 12 and current_time.day == 25 and current_time.hour == 0 and current_time.minute < 15) or \
+       (current_time.month == 1 and current_time.day == 1 and current_time.hour == 0 and current_time.minute < 15) or \
+       (current_time.month == 7 and current_time.day == 4 and current_time.hour == 0 and current_time.minute < 15) or \
+       (current_time.month == 12 and current_time.day == 13 and current_time.hour == 15 and current_time.minute < 15):
+        # Randomly select ISS coordinates and a ring color
         x = random.uniform(min_lon, max_lon)
         y = random.uniform(min_lat, max_lat)
         ring_color = random.choice(COLORS)
+        # Call your light_up_iss_rings function with the randomly chosen ring_color and other parameters
         light_up_iss_rings(x, y, airports_data, pixels, current_led_colors, ring_color, 1.0)
-        did_iss_anim = True
 
-    # One consolidated LED push (harmless even after ripple restored state)
-    t_led = perf_counter()
-    pixels.show()
-    if VERBOSE:
-        print("[LED] show took %.4fs" % (perf_counter() - t_led))
 
-    # Toggle wind/lightning phase and sleep for frame cadence
+    # Switching between animation cycles
     sleep(BLINK_PAUSE)
-    windCycle = not windCycle
+    windCycle = False if windCycle else True
     looplimit -= 1
+
 
 print("Done")
