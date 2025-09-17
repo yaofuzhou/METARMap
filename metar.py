@@ -159,6 +159,13 @@ def should_update_iss_position():
 def calculate_euclidean_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
+def _draw_ring_frame(center_x, center_y, inner_rad, outer_rad, color, airports_data, pixels, current_led_colors):
+    """Draw one ring frame just like ISS logic: set LEDs within [inner_rad, outer_rad)."""
+    for i, airport in enumerate(airports_data[:LED_COUNT]):
+        ax, ay = airport['lon'], airport['lat']
+        d = calculate_euclidean_distance(center_x, center_y, ax, ay)
+        pixels[i] = color if (inner_rad <= d < outer_rad) else current_led_colors[i]
+
 # ISS ripple (blocking, as before)
 def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, ring_color, dimming_factor):
     radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5), (5, 6), (5.5, 6.5), (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5)]
@@ -183,69 +190,45 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, 
             pixels.show()
 
 # -------------------------
-# Boot Splash (center-of-mass ripple)
+# Boot Splash (fixed center ripple)
 # -------------------------
-def play_boot_splash(pixels, airports_data, color=SPLASH_COLOR, ring_step=SPLASH_RING_STEP,
+def play_boot_splash(pixels, color=SPLASH_COLOR,
                      decay=SPLASH_DECAY, frame_delay=SPLASH_FRAME_DELAY, pause_after=SPLASH_PAUSE_AFTER):
     """
-    Computes the center of mass (average lon/lat) of all airports, then
-    renders a ripple that expands outward in rings and then collapses inward.
-    Runs before any weather display.
+    Boot splash: center is fixed at lat=38.375833, lon=-81.593056.
+    Plays ripple outward then inward using the same ISS animation logic.
     """
-    if not airports_data:
-        return
 
-    # Compute center of mass (exclude zeros if present)
-    xs = [a['lon'] for a in airports_data if a.get('lon') not in (None, 0)]
-    ys = [a['lat'] for a in airports_data if a.get('lat') not in (None, 0)]
-    if not xs or not ys:
-        return
-    cx = sum(xs) / len(xs)
-    cy = sum(ys) / len(ys)
+    cx = -81.593056
+    cy = 38.375833
 
-    # Precompute distances from center to each airport’s LED index
-    dists = []
-    for i, a in enumerate(airports_data):
-        if i >= LED_COUNT:
-            break
-        d = calculate_euclidean_distance(cx, cy, a['lon'], a['lat'])
-        dists.append(d)
+    # Background snapshot (all off for splash)
+    bg = [COLOR_CLEAR] * min(len(airports_data), LED_COUNT)
 
-    if not dists:
-        return
+    # Build radii windows (same as ISS animation, outward then inward)
+    radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3),
+             (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5),
+             (5, 6), (5.5, 6.5), (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5)]
 
-    maxd = max(dists)
-    # Clear all LEDs first
-    for i in range(min(len(airports_data), LED_COUNT)):
-        pixels[i] = COLOR_CLEAR
-    pixels.show()
-
-    # Outward ripple
-    ring_idx = 0
-    r = 0.0
-    while r <= (maxd + ring_step):
-        scaled = tuple(int(c * (decay ** ring_idx)) for c in color)
-        for i in range(min(len(dists), LED_COUNT)):
-            pixels[i] = scaled if (r <= dists[i] < r + ring_step) else COLOR_CLEAR
+    # OUTWARD ripple
+    for idx, (inner_r, outer_r) in enumerate(radii):
+        scaled_color = tuple(int(c * (decay ** idx)) for c in color)
+        for i, a in enumerate(airports_data[:LED_COUNT]):
+            d = calculate_euclidean_distance(cx, cy, a['lon'], a['lat'])
+            pixels[i] = scaled_color if inner_r <= d < outer_r else bg[i]
         pixels.show()
         time.sleep(frame_delay)
-        r += ring_step
-        ring_idx += 1
 
-    # Inward ripple
-    ring_idx = 0
-    r = maxd
-    while r >= 0.0:
-        scaled = tuple(int(c * (decay ** ring_idx)) for c in color)
-        inner = max(0.0, r - ring_step)
-        for i in range(min(len(dists), LED_COUNT)):
-            pixels[i] = scaled if (inner <= dists[i] < r) else COLOR_CLEAR
+    # INWARD ripple (reverse radii)
+    for idx, (inner_r, outer_r) in enumerate(reversed(radii)):
+        scaled_color = tuple(int(c * (decay ** idx)) for c in color)
+        for i, a in enumerate(airports_data[:LED_COUNT]):
+            d = calculate_euclidean_distance(cx, cy, a['lon'], a['lat'])
+            pixels[i] = scaled_color if inner_r <= d < outer_r else bg[i]
         pixels.show()
         time.sleep(frame_delay)
-        r -= ring_step
-        ring_idx += 1
 
-    # Clear and brief pause
+    # Clear after splash
     for i in range(min(len(airports_data), LED_COUNT)):
         pixels[i] = COLOR_CLEAR
     pixels.show()
@@ -302,7 +285,7 @@ except IOError:
 if SPLASH_ENABLED:
     if VERBOSE:
         print("Playing boot splash...")
-    play_boot_splash(pixels, airports_data)
+    play_boot_splash(pixels)
 
 # ---------------------------------------------------------------------------
 # Retrieve METAR from aviationweather.gov Data API (XML) — minimal change
