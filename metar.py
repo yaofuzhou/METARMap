@@ -6,7 +6,7 @@ import board
 import neopixel
 import time
 from time import sleep
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta, time as dtime
 import math
 import csv
 import json
@@ -68,8 +68,8 @@ BLINK_TOTALTIME_SECONDS          = 300
 # ----- Daytime dimming of LEDs based on time of day or Sunset/Sunrise -----
 ACTIVATE_DAYTIME_DIMMING         = False
 USE_DYNAMIC_SUNTIME              = True
-BRIGHT_TIME_START                = time(7,0)
-DIM_TIME_START                   = time(19,0)
+BRIGHT_TIME_START                = dtime(7,0)
+DIM_TIME_START                   = dtime(19,0)
 USE_SUNRISE_SUNSET               = False
 LOCATION                         = "Baltimore"
 TIMEZONE                         = 5  # hours to look back in METAR query
@@ -192,13 +192,15 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, 
 # -------------------------
 # Boot Splash (fixed center ripple)
 # -------------------------
-def play_boot_splash(pixels, color=SPLASH_COLOR,
+def play_boot_splash(pixels, airports_data, color=SPLASH_COLOR,
                      decay=SPLASH_DECAY, frame_delay=SPLASH_FRAME_DELAY, pause_after=SPLASH_PAUSE_AFTER):
     """
     Boot splash: center is fixed at lat=38.375833, lon=-81.593056.
     Plays ripple outward then inward using the same ISS animation logic.
     """
 
+    if not airports_data:
+        return
     cx = -81.593056
     cy = 38.375833
 
@@ -285,7 +287,7 @@ except IOError:
 if SPLASH_ENABLED:
     if VERBOSE:
         print("Playing boot splash...")
-    play_boot_splash(pixels)
+    play_boot_splash(pixels, airports_data)
 
 # ---------------------------------------------------------------------------
 # Retrieve METAR from aviationweather.gov Data API (XML) — minimal change
