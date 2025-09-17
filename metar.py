@@ -210,7 +210,8 @@ def play_boot_splash(pixels, airports_data, color=SPLASH_COLOR,
     # Build radii windows (same as ISS animation, outward then inward)
     radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3),
              (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5),
-             (5, 6), (5.5, 6.5), (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5)]
+             (5, 6), (5.5, 6.5), (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5),
+             (8, 9), (8.5, 9.5), (9, 10), (9.5, 10.5), (10, 11)]
 
     # OUTWARD ripple
     for idx, (inner_r, outer_r) in enumerate(radii):
