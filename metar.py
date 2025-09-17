@@ -59,10 +59,9 @@ HIGH_WINDS_THRESHOLD             = 25
 ALWAYS_BLINK_FOR_GUSTS           = True
 BLINK_PAUSE                      = 0.05  # seconds per main frame
 
-# ISS animation timing (visual kept same as before; 16 rings, ~0.05 s per ring previously)
-ISS_ANIMATION_SPEED              = 0.05  # legacy visual reference
-# With the non-blocking animation, we advance 1 ring per main frame.
-# BLINK_PAUSE=0.05 => same visual cadence.
+# ISS animation timing (blocking ripple like original)
+ISS_ANIMATION_SPEED              = 0.05  # seconds per ring
+# 16 rings x 0.05s ~= 0.8s blocking ripple
 
 # Total blinking time for wind/lightning (seconds)
 BLINK_TOTALTIME_SECONDS          = 300
@@ -124,11 +123,10 @@ if astral is not None and USE_SUNRISE_SUNSET:
     print("Sunrise:" + BRIGHT_TIME_START.strftime('%H:%M') + " Sunset:" + DIM_TIME_START.strftime('%H:%M'))
 
 # ======================================================================
-# ISS helpers and state (non-blocking animation)
+# ISS helpers (blocking animation like the original)
 # ======================================================================
 
 last_iss_update_time = datetime.min
-iss_position = None
 
 def get_iss_location():
     url = "http://api.open-notify.org/iss-now.json"
@@ -144,7 +142,7 @@ def get_iss_location():
 def should_update_iss_position():
     global last_iss_update_time
     current_time = datetime.now()
-    if (current_time - last_iss_update_time).total_seconds() >= 5:  # keep 5 s cadence
+    if (current_time - last_iss_update_time).total_seconds() >= 5:
         last_iss_update_time = current_time
         return True
     return False
@@ -152,18 +150,26 @@ def should_update_iss_position():
 def calculate_euclidean_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
-# Non-blocking ISS animation state; matches original 16 rings visually
-ISS_ANIM_ACTIVE = False
-ISS_ANIM_STEP = 0
-ISS_ANIM_RADII = [
-    (0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5),
-    (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5), (5, 6), (5.5, 6.5),
-    (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5)
-]
-ISS_ANIM_COLOR = COLOR_WHITE
-ISS_ANIM_DECAY = 0.85  # keep your dimming profile
-iss_x = None
-iss_y = None
+# Blocking ISS ripple exactly like before (16 rings, per-ring sleep)
+def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, ring_color, dimming_factor):
+    radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5),
+             (4, 5), (4.5, 5.5), (5, 6), (5.5, 6.5), (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5)]
+    for index, (inner_rad, outer_rad) in enumerate(radii):
+        scaled_color = tuple(int(component * (dimming_factor ** index)) for component in ring_color)
+        for i, airport in enumerate(airports_data):
+            ax, ay = airport['lon'], airport['lat']
+            d = calculate_euclidean_distance(iss_x, iss_y, ax, ay)
+            if inner_rad <= d < outer_rad:
+                pixels[i] = scaled_color
+            else:
+                pixels[i] = current_led_colors[i]
+        pixels.show()
+        sleep(ISS_ANIMATION_SPEED)
+
+    # restore LEDs to their original state
+    for i, color in enumerate(current_led_colors):
+        pixels[i] = color
+    pixels.show()
 
 # ======================================================================
 # Initialize LEDs
@@ -364,10 +370,10 @@ for stationId, conditions in conditionDict.items():
         })
 
 # ======================================================================
-# Main loop
+# Main loop (blocking ISS ripple to preserve original cadence)
 # ======================================================================
 
-# Loop timing budget derived from wind/lightning animation settings
+# Approximate loop period: ripple (16*ISS_ANIMATION_SPEED) + BLINK_PAUSE
 BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
 looplimit = int(round(BLINK_TOTALTIME_SECONDS / BLINK_SPEED)) if (ACTIVATE_WINDCONDITION_ANIMATION or ACTIVATE_LIGHTNING_ANIMATION) else 1
 
@@ -477,21 +483,23 @@ while looplimit > 0:
             if HIGH_WINDS_THRESHOLD != -1:
                 pixels[i + OFFSET_LEGEND_BY + 6] = COLOR_VFR if not windCycle else COLOR_HIGH_WINDS
 
-    # --- Non-blocking ISS animation overlay (one ring per frame) ---
-    # Update ISS position on cadence
+    # ---- Blocking ISS ripple to preserve original cadence ----
+    current_led_colors = [pixels[i] for i in range(LED_COUNT)]
+    did_iss_anim = False
+
     if should_update_iss_position():
         iss_position = get_iss_location()
         if iss_position:
             try:
                 iss_x = float(iss_position['longitude'])
                 iss_y = float(iss_position['latitude'])
-                ISS_ANIM_ACTIVE = True
-                ISS_ANIM_STEP = 0
+                light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
+                did_iss_anim = True
             except Exception as e:
                 if VERBOSE:
-                    print("Error in ISS data:", e)
+                    print("Error in ISS animation:", e)
 
-    # Holiday random ISS-style rings, also non-blocking (triggered then animated across frames)
+    # Holiday random ISS-style rings (same blocking ripple behavior)
     current_time = datetime.now()
     holiday_trigger = (
         (current_time.month == 12 and current_time.day == 25 and current_time.hour == 0 and current_time.minute < 15) or
@@ -499,30 +507,14 @@ while looplimit > 0:
         (current_time.month == 7 and current_time.day == 4 and current_time.hour == 0 and current_time.minute < 15) or
         (current_time.month == 12 and current_time.day == 13 and current_time.hour == 15 and current_time.minute < 15)
     )
-    if holiday_trigger and not ISS_ANIM_ACTIVE:
+    if holiday_trigger and not did_iss_anim:
         x = random.uniform(min_lon, max_lon)
         y = random.uniform(min_lat, max_lat)
-        ISS_ANIM_COLOR = random.choice(COLORS)
-        ISS_ANIM_DECAY = 1.0
-        iss_x, iss_y = x, y
-        ISS_ANIM_ACTIVE = True
-        ISS_ANIM_STEP = 0
+        ring_color = random.choice(COLORS)
+        light_up_iss_rings(x, y, airports_data, pixels, current_led_colors, ring_color, 1.0)
+        did_iss_anim = True
 
-    # If animating, overlay current ring on top of base colors
-    if ISS_ANIM_ACTIVE and iss_x is not None and iss_y is not None:
-        if ISS_ANIM_STEP < len(ISS_ANIM_RADII):
-            inner_rad, outer_rad = ISS_ANIM_RADII[ISS_ANIM_STEP]
-            scaled_color = tuple(int(component * (ISS_ANIM_DECAY ** ISS_ANIM_STEP)) for component in ISS_ANIM_COLOR)
-            for idx, airport in enumerate(airports_data):
-                ax, ay = airport['lon'], airport['lat']
-                d = calculate_euclidean_distance(iss_x, iss_y, ax, ay)
-                if inner_rad <= d < outer_rad:
-                    pixels[idx] = scaled_color
-            ISS_ANIM_STEP += 1
-        else:
-            ISS_ANIM_ACTIVE = False  # finished the 16 rings
-
-    # Single LED DMA push per frame + optional timing
+    # One consolidated LED push (harmless even after ripple restored state)
     t_led = perf_counter()
     pixels.show()
     if VERBOSE:
