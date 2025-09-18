@@ -1,52 +1,64 @@
 #!/bin/bash
+set -euo pipefail
+cd "$(dirname "$0")"
 
-# Function to wait for internet connection
+# Single-instance guard
+exec 9>./on.lock
+if ! flock -n 9; then
+  echo "on.sh already running; exiting."
+  exit 0
+fi
+
 wait_for_internet() {
-  local test_ip
-  test_ip=8.8.8.8
-
-  # Wait for internet up to 5 minutes
+  local test_ip=8.8.8.8
   local timeout=300
-
-  while [ $timeout -gt 0 ]; do
-    if ping -c 1 $test_ip &> /dev/null; then
+  while (( timeout > 0 )); do
+    if ping -c 1 "$test_ip" &>/dev/null; then
       echo "Internet is up"
       return 0
-    else
-      echo "Waiting for internet connection..."
-      sleep 10
-      timeout=$((timeout-10))
     fi
+    echo "Waiting for internet connection..."
+    sleep 10
+    timeout=$((timeout-10))
   done
-
-  echo "Timed out waiting for internet connection. Please check your network settings."
+  echo "Timed out waiting for internet connection."
   return 1
 }
 
-# Call the function to wait for internet connection
+update_suntimes_if_needed() {
+  local csv="suntimes.csv"
+  if [[ ! -f "$csv" ]] || [[ "$(date -r "$csv" +%Y-%m-%d)" != "$(date +%Y-%m-%d)" ]]; then
+    echo "Updating suntimes.csv..."
+    if ! pgrep -f "python3 .*suntimes.py" >/dev/null; then
+      sudo python3 suntimes.py >/dev/null 2>&1 &
+    fi
+  fi
+}
+
 wait_for_internet || exit 1
 
-# Path to the suntimes.csv file
-SUNTIMES_CSV="suntimes.csv"
+# Stop any old loop and blank LEDs, then allow new loop
+./lightsoff.sh || true
+rm -f ./stop_refresh
 
-# Check if suntimes.csv does not exist or was not updated today
-if [ ! -f "$SUNTIMES_CSV" ] || [ "$(date -r "$SUNTIMES_CSV" +%Y-%m-%d)" != "$(date +%Y-%m-%d)" ]; then
-  echo "Updating suntimes.csv..."
-  sudo python3 suntimes.py &
-fi
-
-# Remove the stop_refresh file if it exists to allow the refresh process to run
-./lightsoff.sh
-sudo rm -f ./*.pid
-sudo rm -f stop_refresh
-
-# Run the refresh script in a loop
-while [ ! -f stop_refresh ]; do
-  ./refresh.sh
-  # Check if suntimes.csv does not exist or was not updated today
-  if [ ! -f "$SUNTIMES_CSV" ] || [ "$(date -r "$SUNTIMES_CSV" +%Y-%m-%d)" != "$(date +%Y-%m-%d)" ]; then
-    echo "Updating suntimes.csv..."
-    sudo python3 suntimes.py &
+# Clean up corrupt pidfiles only (do not kill here)
+for f in ./offpid.pid ./metarpid.pid; do
+  if [[ -f "$f" ]]; then
+    pid=$(cat "$f" || true)
+    [[ "$pid" =~ ^[0-9]+$ ]] || rm -f "$f"
   fi
-  # sleep 340
+done
+
+# We will pass --splash only on the first run of metar.py
+SPLASH_ARG="--splash"
+
+# MAIN LOOP: metar.py runs to completion; start next cycle immediately
+while [[ ! -f ./stop_refresh ]]; do
+  update_suntimes_if_needed
+  if [[ -n "${SPLASH_ARG}" ]]; then
+    ./refresh.sh "${SPLASH_ARG}"
+    SPLASH_ARG=""
+  else
+    ./refresh.sh
+  fi
 done

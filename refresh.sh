@@ -18,21 +18,20 @@ stop_by_pidfile() {
   fi
 }
 
-# Ensure pixelsoff isn't still running from a previous call
+# Ensure pixelsoff is not still running
 stop_by_pidfile ./offpid.pid
 
 echo "Starting metar.py"
 
-# Extra safety: if a stray metar.py exists (launched outside this flow), stop it
+# Extra safety: if a stray metar.py exists, stop it
 if [[ -f ./metarpid.pid ]]; then
   stop_by_pidfile ./metarpid.pid
 fi
 
-# Launch metar.py; let it run to completion (no timeout)
-sudo /usr/bin/python3 /home/pi/METARMap/metar.py &
+# Forward any args we received (e.g., --splash) to metar.py
+sudo /usr/bin/python3 /home/pi/METARMap/metar.py "$@" &
 echo $! > ./metarpid.pid
 
-# Wait until it finishes, then clean pidfile
 wait "$(cat ./metarpid.pid)" || true
 rm -f ./metarpid.pid
 

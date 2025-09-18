@@ -11,6 +11,8 @@ import math
 import csv
 import json
 import random
+import sys
+import argparse
 
 try:
     import astral
@@ -79,7 +81,12 @@ LED_BRIGHTNESS_DARK              = 0.04
 CONTINUOUS_BRIGHTNESS            = True
 
 # ----- Boot splash (center-of-mass ripple) -----
-SPLASH_ENABLED     = True
+# SPLASH_ENABLED     = True
+# Parse a simple flag for splash control
+_parser = argparse.ArgumentParser(add_help=False)
+_parser.add_argument("--splash", action="store_true", help="Play splash screen once on program start")
+_args, _ = _parser.parse_known_args()
+SPLASH_ENABLED = bool(_args.splash)
 SPLASH_COLOR       = COLOR_WHITE   # boot splash color
 SPLASH_RING_STEP   = 0.75          # “thickness” of each ring in lon/lat distance units
 SPLASH_DECAY       = 0.85          # dim per ring
