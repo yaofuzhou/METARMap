@@ -298,7 +298,7 @@ if SPLASH_ENABLED:
     play_boot_splash(pixels, airports_data)
 
 # ---------------------------------------------------------------------------
-# Retrieve METAR from aviationweather.gov Data API (XML) — minimal change
+# Retrieve METAR from aviationweather.gov Data API (XML)- minimal change
 # ---------------------------------------------------------------------------
 ids = ",".join([item for item in airports if item != "NULL"])
 url = f"https://aviationweather.gov/api/data/metar?ids={ids}&hours={TIMEZONE}&format=xml"
