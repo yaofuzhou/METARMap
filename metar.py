@@ -157,7 +157,7 @@ def get_iss_location():
 def should_update_iss_position():
     global last_iss_update_time
     current_time = datetime.now()
-    if (current_time - last_iss_update_time).total_seconds() >= 5:
+    if (current_time - last_iss_update_time).total_seconds() >= 10:
         last_iss_update_time = current_time
         return True
     return False
