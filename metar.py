@@ -63,7 +63,7 @@ WIND_BLINK_THRESHOLD             = 15
 HIGH_WINDS_THRESHOLD             = 25
 ALWAYS_BLINK_FOR_GUSTS           = True
 BLINK_PAUSE                      = 0.05
-ISS_ANIMATION_SPEED              = 0.05
+ISS_ANIMATION_SPEED              = 0.03
 BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
 BLINK_TOTALTIME_SECONDS          = 300
 
@@ -88,7 +88,7 @@ _parser.add_argument("--splash", action="store_true", help="Play splash screen o
 _args, _ = _parser.parse_known_args()
 SPLASH_ENABLED = bool(_args.splash)
 SPLASH_COLOR       = COLOR_WHITE   # boot splash color
-SPLASH_RING_STEP   = 0.75          # "thickness" of each ring in lon/lat distance units
+SPLASH_RING_STEP   = 0.75          # “thickness” of each ring in lon/lat distance units
 SPLASH_DECAY       = 0.85          # dim per ring
 SPLASH_FRAME_DELAY = 0.04          # seconds between frames
 SPLASH_PAUSE_AFTER = 0.10          # small clear pause after splash
@@ -251,8 +251,7 @@ print("Initializing LEDs...")
 bright = BRIGHT_TIME_START < datetime.now().time() < DIM_TIME_START
 pixels = neopixel.NeoPixel(LED_PIN, LED_COUNT, brightness=LED_BRIGHTNESS, pixel_order=LED_ORDER, auto_write=False)
 
-# DIAGNOSTIC: Read airports CSV
-t_start = time.time()
+# Read the airports file and store latitude and longitude
 airports_data = []
 airports = []
 with open("/home/pi/METARMap/airports.csv", newline='') as f:
@@ -264,7 +263,6 @@ with open("/home/pi/METARMap/airports.csv", newline='') as f:
             'lon': float(row['lon'])
         })
         airports.append(row['code'])
-print(f"[TIMING] CSV read: {time.time() - t_start:.3f}s | Airport count: {len(airports)}")
 
 # Initialize min and max values for latitude and longitude (for holiday sparkle bounds)
 min_lon = min_lat = float('inf')
@@ -297,9 +295,7 @@ except IOError:
 if SPLASH_ENABLED:
     if VERBOSE:
         print("Playing boot splash...")
-    t_start = time.time()
     play_boot_splash(pixels, airports_data)
-    print(f"[TIMING] Boot splash: {time.time() - t_start:.3f}s")
 
 # ---------------------------------------------------------------------------
 # Retrieve METAR from aviationweather.gov Data API (XML)- minimal change
@@ -312,14 +308,9 @@ req = urllib.request.Request(
     url,
     headers={'User-Agent': 'METARMap/1.0 (+raspberrypi)'}
 )
-
-# DIAGNOSTIC: Time the API call
-t_start = time.time()
 content = urllib.request.urlopen(req, timeout=10).read()
-print(f"[TIMING] METAR API fetch: {time.time() - t_start:.3f}s | Response size: {len(content)} bytes")
 
-# DIAGNOSTIC: Time XML parsing
-t_start = time.time()
+# Parse XML and build conditionDict
 root = ET.fromstring(content)
 conditionDict = {}
 stationList = []
@@ -432,10 +423,7 @@ for metar in root.iter('METAR'):
     if displayairports is None or stationId in displayairports:
         stationList.append(stationId)
 
-print(f"[TIMING] XML parse + conditionDict build: {time.time() - t_start:.3f}s | Stations: {len(conditionDict)}")
-
-# DIAGNOSTIC: Time suntimes.csv read
-t_start = time.time()
+# Read data from 'suntimes.csv' file
 with open('suntimes.csv', newline='') as f:
     reader = csv.DictReader(f)
     suntimes = {row['code']: row for row in reader}
@@ -449,7 +437,6 @@ for stationId, conditions in conditionDict.items():
             'sunset': suntimes[stationId]['sunset'],
             'twilight_end': suntimes[stationId]['twilight_end']
         })
-print(f"[TIMING] Suntimes CSV read + merge: {time.time() - t_start:.3f}s")
 
 # Setting LED colors based on weather conditions
 looplimit = int(round(BLINK_TOTALTIME_SECONDS / BLINK_SPEED)) if (ACTIVATE_WINDCONDITION_ANIMATION or ACTIVATE_LIGHTNING_ANIMATION) else 1
@@ -459,17 +446,7 @@ displayTime = 0.0
 displayAirportCounter = 0
 numAirports = len(stationList)
 
-print(f"[TIMING] Starting main loop for {looplimit} iterations (approx {BLINK_TOTALTIME_SECONDS}s total)")
-
-loop_iteration = 0
-iss_fetch_count = 0
-iss_animation_count = 0
-holiday_animation_count = 0
-loop_start_time = time.time()
-
 while looplimit > 0:
-    iteration_start = time.time()
-    
     i = 0
     for airportcode in airports:
         if airportcode == "NULL":
@@ -580,14 +557,11 @@ while looplimit > 0:
     current_led_colors = [pixels[i] for i in range(LED_COUNT)]
 
     # Check if it's time to update ISS position
-    iss_check_start = time.time()
     if should_update_iss_position():
-        iss_fetch_count += 1
         iss_position = get_iss_location()
 
     if iss_position:
         try:
-            iss_animation_count += 1
             iss_x = float(iss_position['longitude'])
             iss_y = float(iss_position['latitude'])
             if VERBOSE:
@@ -596,42 +570,21 @@ while looplimit > 0:
         except Exception as e:
             if VERBOSE:
                 print(f"Error in ISS animation: {e}")
-    iss_check_duration = time.time() - iss_check_start
 
     current_time = datetime.now()
     # Holiday sparkle windows (random ISS-like rings)
-    holiday_check_start = time.time()
     if (current_time.month == 12 and current_time.day == 25 and current_time.hour == 0 and current_time.minute < 15) or \
        (current_time.month == 1 and current_time.day == 1 and current_time.hour == 0 and current_time.minute < 15) or \
        (current_time.month == 7 and current_time.day == 4 and current_time.hour == 0 and current_time.minute < 15) or \
        (current_time.month == 12 and current_time.day == 13 and current_time.hour == 15 and current_time.minute < 15):
-        holiday_animation_count += 1
         x = random.uniform(min_lon, max_lon)
         y = random.uniform(min_lat, max_lat)
         ring_color = random.choice(COLORS)
         light_up_iss_rings(x, y, airports_data, pixels, current_led_colors, ring_color, 1.0)
-    holiday_check_duration = time.time() - holiday_check_start
 
     # Switching between animation cycles
     sleep(BLINK_PAUSE)
     windCycle = not windCycle
     looplimit -= 1
-    
-    iteration_duration = time.time() - iteration_start
-    loop_iteration += 1
-    
-    # Print detailed timing every 10 iterations
-    if loop_iteration % 10 == 0:
-        elapsed = time.time() - loop_start_time
-        print(f"[TIMING] Iteration {loop_iteration}: {iteration_duration:.3f}s | ISS check: {iss_check_duration:.3f}s | Holiday: {holiday_check_duration:.3f}s | Total elapsed: {elapsed:.1f}s")
 
-# Final summary
-total_duration = time.time() - loop_start_time
-print(f"\n[TIMING] === SUMMARY ===")
-print(f"Total iterations: {loop_iteration}")
-print(f"Total runtime: {total_duration:.1f}s")
-print(f"ISS fetches: {iss_fetch_count}")
-print(f"ISS animations: {iss_animation_count}")
-print(f"Holiday animations: {holiday_animation_count}")
-print(f"Average iteration time: {total_duration/loop_iteration:.3f}s")
 print("Done")
