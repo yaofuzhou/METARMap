@@ -146,7 +146,7 @@ iss_position = None
 def get_iss_location():
     url = "http://api.open-notify.org/iss-now.json"
     try:
-        with urllib.request.urlopen(url) as response:
+        with urllib.request.urlopen(url, timeout=5) as response:
             data = json.loads(response.read().decode())
             return data['iss_position']
     except Exception as e:
