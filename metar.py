@@ -88,7 +88,6 @@ _parser.add_argument("--splash", action="store_true", help="Play splash screen o
 _args, _ = _parser.parse_known_args()
 SPLASH_ENABLED = bool(_args.splash)
 SPLASH_COLOR       = COLOR_WHITE   # boot splash color
-SPLASH_RING_STEP   = 0.75          # "thickness" of each ring in lon/lat distance units
 SPLASH_DECAY       = 0.85          # dim per ring
 SPLASH_FRAME_DELAY = 0.04          # seconds between frames
 SPLASH_PAUSE_AFTER = 0.10          # small clear pause after splash
@@ -594,7 +593,7 @@ while looplimit > 0:
             if map_min_lat <= iss_y <= map_max_lat and map_min_lon <= iss_x <= map_max_lon:
                 if VERBOSE:
                     print("ISS lat lon:", iss_y, iss_x)
-                light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
+                light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 1.00)
         except Exception as e:
             if VERBOSE:
                 print(f"Error in ISS animation: {e}")
