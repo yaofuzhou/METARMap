@@ -88,7 +88,7 @@ _parser.add_argument("--splash", action="store_true", help="Play splash screen o
 _args, _ = _parser.parse_known_args()
 SPLASH_ENABLED = bool(_args.splash)
 SPLASH_COLOR       = COLOR_WHITE   # boot splash color
-SPLASH_RING_STEP   = 0.75          # “thickness” of each ring in lon/lat distance units
+SPLASH_RING_STEP   = 0.75          # "thickness" of each ring in lon/lat distance units
 SPLASH_DECAY       = 0.85          # dim per ring
 SPLASH_FRAME_DELAY = 0.04          # seconds between frames
 SPLASH_PAUSE_AFTER = 0.10          # small clear pause after splash
@@ -98,6 +98,9 @@ SHOW_LEGEND = False
 OFFSET_LEGEND_BY = 0
 # Legend order:
 # VFR, MVFR, IFR, LIFR, LIGHTNING, WINDY, HIGH WINDS
+
+# ----- ISS Animation optimization -----
+ISS_MAX_RING_RADIUS = 11  # Largest ring radius from the animation
 
 # ---------------------------------------------------------------------------
 # ------------END OF CONFIGURATION-------------------------------------------
@@ -263,6 +266,26 @@ with open("/home/pi/METARMap/airports.csv", newline='') as f:
             'lon': float(row['lon'])
         })
         airports.append(row['code'])
+
+# Calculate map coverage boundaries for ISS animation optimization
+map_min_lat = map_min_lon = float('inf')
+map_max_lat = map_max_lon = float('-inf')
+for airport in airports_data:
+    if airport['code'] != 'NULL':
+        lat = airport['lat']
+        lon = airport['lon']
+        if lat != 0:
+            map_min_lat = min(map_min_lat, lat)
+            map_max_lat = max(map_max_lat, lat)
+        if lon != 0:
+            map_min_lon = min(map_min_lon, lon)
+            map_max_lon = max(map_max_lon, lon)
+
+# Extend boundaries by the maximum ring radius
+map_min_lat -= ISS_MAX_RING_RADIUS
+map_max_lat += ISS_MAX_RING_RADIUS
+map_min_lon -= ISS_MAX_RING_RADIUS
+map_max_lon += ISS_MAX_RING_RADIUS
 
 # Initialize min and max values for latitude and longitude (for holiday sparkle bounds)
 min_lon = min_lat = float('inf')
@@ -564,9 +587,12 @@ while looplimit > 0:
         try:
             iss_x = float(iss_position['longitude'])
             iss_y = float(iss_position['latitude'])
-            if VERBOSE:
-                print("ISS lat lon:", iss_y, iss_x)
-            light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
+            
+            # Only animate ISS if it's within the extended map coverage area
+            if map_min_lat <= iss_y <= map_max_lat and map_min_lon <= iss_x <= map_max_lon:
+                if VERBOSE:
+                    print("ISS lat lon:", iss_y, iss_x)
+                light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
         except Exception as e:
             if VERBOSE:
                 print(f"Error in ISS animation: {e}")
