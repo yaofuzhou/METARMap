@@ -64,7 +64,8 @@ HIGH_WINDS_THRESHOLD             = 25
 ALWAYS_BLINK_FOR_GUSTS           = True
 BLINK_PAUSE                      = 0.05
 ISS_ANIMATION_SPEED              = 0.05
-BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
+# BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
+BLINK_SPEED                      = 1.00
 BLINK_TOTALTIME_SECONDS          = 300
 
 # ----- Daytime dimming of LEDs based on time of day or Sunset/Sunrise -----
