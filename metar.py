@@ -62,8 +62,8 @@ FADE_INSTEAD_OF_BLINK            = True
 WIND_BLINK_THRESHOLD             = 15
 HIGH_WINDS_THRESHOLD             = 25
 ALWAYS_BLINK_FOR_GUSTS           = True
-BLINK_PAUSE                      = 0.03
-ISS_ANIMATION_SPEED              = 0.03
+BLINK_PAUSE                      = 0.05
+ISS_ANIMATION_SPEED              = 0.05
 BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
 BLINK_TOTALTIME_SECONDS          = 300
 
@@ -470,6 +470,8 @@ displayAirportCounter = 0
 numAirports = len(stationList)
 
 while looplimit > 0:
+    iteration_start_time = time.time()
+    
     i = 0
     for airportcode in airports:
         if airportcode == "NULL":
@@ -593,15 +595,9 @@ while looplimit > 0:
                 if VERBOSE:
                     print("ISS lat lon:", iss_y, iss_x)
                 light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
-            else:
-                # ISS out of range - sleep to maintain timing
-                sleep(ISS_ANIMATION_SPEED * 16)
         except Exception as e:
             if VERBOSE:
                 print(f"Error in ISS animation: {e}")
-    else:
-        # No ISS position - sleep to maintain timing  
-        sleep(ISS_ANIMATION_SPEED * 16)
 
     current_time = datetime.now()
     # Holiday sparkle windows (random ISS-like rings)
@@ -614,8 +610,15 @@ while looplimit > 0:
         ring_color = random.choice(COLORS)
         light_up_iss_rings(x, y, airports_data, pixels, current_led_colors, ring_color, 1.0)
 
-    # Switching between animation cycles
-    sleep(BLINK_PAUSE)
+    # Sleep for remaining time to maintain consistent cycle timing
+    elapsed = time.time() - iteration_start_time
+    remaining = BLINK_SPEED - elapsed
+    if remaining > 0:
+        sleep(remaining)
+    else:
+        # If we're already over time, minimal sleep to prevent tight loop
+        sleep(0.01)
+    
     windCycle = not windCycle
     looplimit -= 1
 
