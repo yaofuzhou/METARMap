@@ -27,7 +27,7 @@ VERBOSE = False  # When False, suppresses per-LED and per-station prints
 # -------------------------
 # Performance logging toggle
 # -------------------------
-ENABLE_PERFORMANCE_LOG = True  # Set to True to enable detailed timing logs
+ENABLE_PERFORMANCE_LOG = False  # Set to True to enable detailed timing logs
 PERFORMANCE_LOG_FILE = "/home/pi/METARMap/performance.log"
 
 # metar.py script iteration 1.6.0 (adds boot splash + VERBOSE flag + new API endpoint)
