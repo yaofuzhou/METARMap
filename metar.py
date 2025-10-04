@@ -24,6 +24,12 @@ except ImportError:
 # -------------------------
 VERBOSE = False  # When False, suppresses per-LED and per-station prints
 
+# -------------------------
+# Performance logging toggle
+# -------------------------
+ENABLE_PERFORMANCE_LOG = False  # Set to True to enable detailed timing logs
+PERFORMANCE_LOG_FILE = "/home/pi/METARMap/performance.log"
+
 # metar.py script iteration 1.6.0 (adds boot splash + VERBOSE flag + new API endpoint)
 
 # ---------------------------------------------------------------------------
@@ -64,8 +70,7 @@ HIGH_WINDS_THRESHOLD             = 25
 ALWAYS_BLINK_FOR_GUSTS           = True
 BLINK_PAUSE                      = 0.05
 ISS_ANIMATION_SPEED              = 0.05
-# BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
-BLINK_SPEED                      = 1.00
+BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
 BLINK_TOTALTIME_SECONDS          = 300
 
 # ----- Daytime dimming of LEDs based on time of day or Sunset/Sunrise -----
@@ -89,6 +94,7 @@ _parser.add_argument("--splash", action="store_true", help="Play splash screen o
 _args, _ = _parser.parse_known_args()
 SPLASH_ENABLED = bool(_args.splash)
 SPLASH_COLOR       = COLOR_WHITE   # boot splash color
+SPLASH_RING_STEP   = 0.75          # "thickness" of each ring in lon/lat distance units
 SPLASH_DECAY       = 0.85          # dim per ring
 SPLASH_FRAME_DELAY = 0.04          # seconds between frames
 SPLASH_PAUSE_AFTER = 0.10          # small clear pause after splash
@@ -110,6 +116,22 @@ print("Running metar.py at " + datetime.now().strftime('%d/%m/%Y %H:%M'))
 print("Wind animation:" + str(ACTIVATE_WINDCONDITION_ANIMATION))
 print("Lightning animation:" + str(ACTIVATE_LIGHTNING_ANIMATION))
 print("Daytime Dimming:" + str(ACTIVATE_DAYTIME_DIMMING) + (" using Sunrise/Sunset" if USE_SUNRISE_SUNSET and ACTIVATE_DAYTIME_DIMMING else ""))
+
+# Initialize performance logging
+perf_log = None
+if ENABLE_PERFORMANCE_LOG:
+    perf_log = open(PERFORMANCE_LOG_FILE, 'w')  # Overwrite existing log
+    perf_log.write(f"=== METAR Performance Log - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===\n")
+    perf_log.write(f"BLINK_SPEED: {BLINK_SPEED}s, ISS_ANIMATION_SPEED: {ISS_ANIMATION_SPEED}s\n")
+    perf_log.write(f"Target iterations: {int(round(BLINK_TOTALTIME_SECONDS / BLINK_SPEED))}\n\n")
+    perf_log.flush()
+    print(f"Performance logging enabled: {PERFORMANCE_LOG_FILE}")
+
+def log_perf(message):
+    """Helper function to log performance data"""
+    if perf_log:
+        perf_log.write(f"{message}\n")
+        perf_log.flush()
 
 # Figure out sunrise/sunset times if astral is being used
 if astral is not None and USE_SUNRISE_SUNSET:
@@ -472,6 +494,10 @@ numAirports = len(stationList)
 while looplimit > 0:
     iteration_start_time = time.time()
     
+    # Track timing for each major section
+    t_led_setup = t_led_show = t_iss_check = t_iss_anim = t_holiday = 0
+    
+    led_setup_start = time.time()
     i = 0
     for airportcode in airports:
         if airportcode == "NULL":
@@ -563,6 +589,8 @@ while looplimit > 0:
             pixels[i] = color
         i += 1
 
+    t_led_setup = time.time() - led_setup_start
+
     # Legend
     if SHOW_LEGEND:
         pixels[i + OFFSET_LEGEND_BY] = COLOR_VFR
@@ -577,14 +605,20 @@ while looplimit > 0:
                 pixels[i + OFFSET_LEGEND_BY + 6] = COLOR_VFR if not windCycle else COLOR_HIGH_WINDS
 
     # Update actual LEDs all at once
+    led_show_start = time.time()
     pixels.show()
+    t_led_show = time.time() - led_show_start
 
     current_led_colors = [pixels[i] for i in range(LED_COUNT)]
 
     # Check if it's time to update ISS position
+    iss_check_start = time.time()
     if should_update_iss_position():
         iss_position = get_iss_location()
+    t_iss_check = time.time() - iss_check_start
 
+    iss_anim_start = time.time()
+    iss_animated = False
     if iss_position:
         try:
             iss_x = float(iss_position['longitude'])
@@ -595,10 +629,14 @@ while looplimit > 0:
                 if VERBOSE:
                     print("ISS lat lon:", iss_y, iss_x)
                 light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
+                iss_animated = True
         except Exception as e:
             if VERBOSE:
                 print(f"Error in ISS animation: {e}")
+    t_iss_anim = time.time() - iss_anim_start
 
+    holiday_start = time.time()
+    holiday_animated = False
     current_time = datetime.now()
     # Holiday sparkle windows (random ISS-like rings)
     if (current_time.month == 12 and current_time.day == 25 and current_time.hour == 0 and current_time.minute < 15) or \
@@ -609,17 +647,36 @@ while looplimit > 0:
         y = random.uniform(min_lat, max_lat)
         ring_color = random.choice(COLORS)
         light_up_iss_rings(x, y, airports_data, pixels, current_led_colors, ring_color, 1.0)
+        holiday_animated = True
+    t_holiday = time.time() - holiday_start
 
     # Sleep for remaining time to maintain consistent cycle timing
     elapsed = time.time() - iteration_start_time
     remaining = BLINK_SPEED - elapsed
+    
+    # Log performance data
+    iteration_num = int(round(BLINK_TOTALTIME_SECONDS / BLINK_SPEED)) - looplimit + 1
+    if ENABLE_PERFORMANCE_LOG and iteration_num % 10 == 0:  # Log every 10th iteration
+        log_perf(f"Iter {iteration_num:3d}: LED_setup={t_led_setup:.3f}s, LED_show={t_led_show:.3f}s, "
+                 f"ISS_check={t_iss_check:.3f}s, ISS_anim={t_iss_anim:.3f}s{'*' if iss_animated else ' '}, "
+                 f"Holiday={t_holiday:.3f}s{'*' if holiday_animated else ' '}, "
+                 f"Total={elapsed:.3f}s, Target={BLINK_SPEED:.3f}s, Remaining={remaining:.3f}s")
+    
     if remaining > 0:
         sleep(remaining)
     else:
         # If we're already over time, minimal sleep to prevent tight loop
         sleep(0.01)
+        if ENABLE_PERFORMANCE_LOG:
+            log_perf(f"*** WARNING Iter {iteration_num}: OVERTIME by {-remaining:.3f}s ***")
     
     windCycle = not windCycle
     looplimit -= 1
+
+# Close performance log if enabled
+if ENABLE_PERFORMANCE_LOG and perf_log:
+    log_perf(f"\n=== Log Complete - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ===")
+    perf_log.close()
+    print(f"Performance log saved to: {PERFORMANCE_LOG_FILE}")
 
 print("Done")
