@@ -62,8 +62,8 @@ FADE_INSTEAD_OF_BLINK            = True
 WIND_BLINK_THRESHOLD             = 15
 HIGH_WINDS_THRESHOLD             = 25
 ALWAYS_BLINK_FOR_GUSTS           = True
-BLINK_PAUSE                      = 0.02
-ISS_ANIMATION_SPEED              = 0.02
+BLINK_PAUSE                      = 0.05
+ISS_ANIMATION_SPEED              = 0.05
 BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
 BLINK_TOTALTIME_SECONDS          = 300
 
@@ -593,9 +593,15 @@ while looplimit > 0:
                 if VERBOSE:
                     print("ISS lat lon:", iss_y, iss_x)
                 light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
+            else:
+                # ISS out of range - sleep to maintain timing
+                sleep(ISS_ANIMATION_SPEED * 16)
         except Exception as e:
             if VERBOSE:
                 print(f"Error in ISS animation: {e}")
+    else:
+        # No ISS position - sleep to maintain timing  
+        sleep(ISS_ANIMATION_SPEED * 16)
 
     current_time = datetime.now()
     # Holiday sparkle windows (random ISS-like rings)
