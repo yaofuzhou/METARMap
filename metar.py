@@ -612,7 +612,10 @@ while looplimit > 0:
     # Check if it's time to update ISS position
     iss_check_start = time.time()
     if should_update_iss_position():
-        iss_position = get_iss_location()
+        new_position = get_iss_location()
+        if new_position is not None:  # Only update if we got valid data
+            iss_position = new_position
+
     t_iss_check = time.time() - iss_check_start
 
     iss_anim_start = time.time()
