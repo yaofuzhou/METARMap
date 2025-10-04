@@ -215,12 +215,6 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, 
         pixels.show()
         sleep(ISS_ANIMATION_SPEED)
 
-        # After the last ring, restore the LEDs to their original state
-        if index == len(radii) - 1:
-            for i, color in enumerate(current_led_colors[:LED_COUNT]):
-                pixels[i] = color
-            pixels.show()
-
 # -------------------------
 # Boot Splash (fixed center ripple)
 # -------------------------
@@ -495,7 +489,7 @@ while looplimit > 0:
     iteration_start_time = time.time()
     
     # Track timing for each major section
-    t_led_setup = t_led_show = t_iss_check = t_iss_anim = t_holiday = 0
+    t_led_setup = t_led_show = t_copy = t_iss_check = t_iss_anim = t_holiday = 0
     
     led_setup_start = time.time()
     i = 0
@@ -609,7 +603,10 @@ while looplimit > 0:
     pixels.show()
     t_led_show = time.time() - led_show_start
 
+    # Create LED snapshot for ISS/holiday animations
+    copy_start = time.time()
     current_led_colors = [pixels[i] for i in range(LED_COUNT)]
+    t_copy = time.time() - copy_start
 
     # Check if it's time to update ISS position
     iss_check_start = time.time()
@@ -658,7 +655,7 @@ while looplimit > 0:
     iteration_num = int(round(BLINK_TOTALTIME_SECONDS / BLINK_SPEED)) - looplimit + 1
     if ENABLE_PERFORMANCE_LOG and iteration_num % 10 == 0:  # Log every 10th iteration
         log_perf(f"Iter {iteration_num:3d}: LED_setup={t_led_setup:.3f}s, LED_show={t_led_show:.3f}s, "
-                 f"ISS_check={t_iss_check:.3f}s, ISS_anim={t_iss_anim:.3f}s{'*' if iss_animated else ' '}, "
+                 f"Copy={t_copy:.3f}s, ISS_check={t_iss_check:.3f}s, ISS_anim={t_iss_anim:.3f}s{'*' if iss_animated else ' '}, "
                  f"Holiday={t_holiday:.3f}s{'*' if holiday_animated else ' '}, "
                  f"Total={elapsed:.3f}s, Target={BLINK_SPEED:.3f}s, Remaining={remaining:.3f}s")
     
