@@ -27,7 +27,7 @@ VERBOSE = False  # When False, suppresses per-LED and per-station prints
 # -------------------------
 # Performance logging toggle
 # -------------------------
-ENABLE_PERFORMANCE_LOG = False  # Set to True to enable detailed timing logs
+ENABLE_PERFORMANCE_LOG = True  # Set to True to enable detailed timing logs
 PERFORMANCE_LOG_FILE = "/home/pi/METARMap/performance.log"
 
 # metar.py script iteration 1.6.0 (adds boot splash + VERBOSE flag + new API endpoint)
@@ -70,7 +70,8 @@ HIGH_WINDS_THRESHOLD             = 25
 ALWAYS_BLINK_FOR_GUSTS           = True
 BLINK_PAUSE                      = 0.05
 ISS_ANIMATION_SPEED              = 0.05
-BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
+# BLINK_SPEED = ISS_ANIMATION_SPEED * 16 + BLINK_PAUSE
+BLINK_SPEED                      = 1.00
 BLINK_TOTALTIME_SECONDS          = 300
 
 # ----- Daytime dimming of LEDs based on time of day or Sunset/Sunrise -----
@@ -171,7 +172,7 @@ iss_position = None
 def get_iss_location():
     url = "http://api.open-notify.org/iss-now.json"
     try:
-        with urllib.request.urlopen(url, timeout=5) as response:
+        with urllib.request.urlopen(url, timeout=0.5) as response:
             data = json.loads(response.read().decode())
             return data['iss_position']
     except Exception as e:
