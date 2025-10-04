@@ -593,7 +593,7 @@ while looplimit > 0:
             if map_min_lat <= iss_y <= map_max_lat and map_min_lon <= iss_x <= map_max_lon:
                 if VERBOSE:
                     print("ISS lat lon:", iss_y, iss_x)
-                light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 1.00)
+                light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
         except Exception as e:
             if VERBOSE:
                 print(f"Error in ISS animation: {e}")
