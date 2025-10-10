@@ -212,7 +212,7 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, 
         sleep(ISS_ANIMATION_SPEED)
 
 def light_up_iss_tri_rings(iss_x, iss_y, airports_data, pixels, current_led_colors,
-                           ring_color, dimming_factor, apex_angle_deg=30.0):
+                           ring_color, dimming_factor, apex_angle_deg=20.0):
     """
     Expanding *triangular* rings (similar-triangle bands) centered at ISS centroid (current location),
     pointing toward the ISS motion direction (last -> current). The triangle is isosceles with a sharp apex.
