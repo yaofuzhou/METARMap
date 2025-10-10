@@ -266,7 +266,7 @@ def light_up_iss_tri_rings(iss_x, iss_y, airports_data, pixels, current_led_colo
     (0.0, 0.6667),
     (0.3333, 1.0),
     (0.6667, 1.3333),
-    (1.0, 2.0),
+    (1.0, 1.6667),
     (1.3333, 2.0),
     (1.6667, 2.3333),
     (2.0, 2.6667),
@@ -283,7 +283,7 @@ def light_up_iss_tri_rings(iss_x, iss_y, airports_data, pixels, current_led_colo
     (5.6667, 6.3333),
     (6.0, 6.6667),
     (6.3333, 7.0),
-    (6.6667, 7.3333)
+    (6.6667, 7.3333),
 ]
 
     # 4) Local-projection helper (world -> (u,w))
