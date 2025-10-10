@@ -108,7 +108,7 @@ OFFSET_LEGEND_BY = 0
 
 # ----- ISS Animation optimization -----
 ISS_MAX_RING_RADIUS = 11  # Largest ring radius from the animation
-TEST_ISS_ANIMATION = True
+TEST_ISS_ANIMATION = False
 
 # ---------------------------------------------------------------------------
 # ------------END OF CONFIGURATION-------------------------------------------
@@ -263,29 +263,7 @@ def light_up_iss_tri_rings(iss_x, iss_y, airports_data, pixels, current_led_colo
 
     # 3) Band "scales" (analogous to ring radii). Tune or match your old frames.
     # Using the same count as your circular ripple for visual parity.
-    scales = [
-    (0.0, 0.6667),
-    (0.3333, 1.0),
-    (0.6667, 1.3333),
-    (1.0, 1.6667),
-    (1.3333, 2.0),
-    (1.6667, 2.3333),
-    (2.0, 2.6667),
-    (2.3333, 3.0),
-    (2.6667, 3.3333),
-    (3.0, 3.6667),
-    (3.3333, 4.0),
-    (3.6667, 4.3333),
-    (4.0, 4.6667),
-    (4.3333, 5.0),
-    (4.6667, 5.3333),
-    (5.0, 5.6667),
-    (5.3333, 6.0),
-    (5.6667, 6.3333),
-    (6.0, 6.6667),
-    (6.3333, 7.0),
-    (6.6667, 7.3333),
-]
+    scales = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5), (5, 6), (5.5, 6.5), (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5)]
 
     # 4) Local-projection helper (world -> (u,w))
     def to_local(px, py):
