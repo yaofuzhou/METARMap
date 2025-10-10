@@ -248,7 +248,7 @@ def light_up_iss_tri_rings(iss_x, iss_y, airports_data, pixels, current_led_colo
         except Exception:
             v = (1.0, 0.0)
     else:
-        v = (1.0, 0.0)
+        return
 
     # n is v rotated 90 deg CCW
     n = (-v[1], v[0])
