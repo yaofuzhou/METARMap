@@ -715,11 +715,12 @@ while looplimit > 0:
             if map_min_lat <= real_y <= map_max_lat and map_min_lon <= real_x <= map_max_lon:
                 if VERBOSE:
                     print("ISS lat lon:", real_y, real_x)
-                light_up_iss_tri_rings(
-                    real_x, real_y,
-                    airports_data, pixels, current_led_colors,
-                    COLOR_WHITE, 0.85, apex_angle_deg=20.0
-                )
+                # light_up_iss_tri_rings(
+                #     real_x, real_y,
+                #     airports_data, pixels, current_led_colors,
+                #     COLOR_WHITE, 0.85, apex_angle_deg=20.0
+                # )
+                light_up_iss_rings(real_y, real_x, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
                 played = True
         except Exception as e:
             if VERBOSE:
@@ -729,12 +730,13 @@ while looplimit > 0:
     if TEST_ISS_ANIMATION and not played:
         cx, cy = -81.593056, 38.375833
         # Provide a fake previous position so the triangle has a direction
-        iss_prev_position = {"longitude": str(cx - 1.0), "latitude": str(cy)}
-        light_up_iss_tri_rings(
-            cx, cy,
-            airports_data, pixels, current_led_colors,
-            COLOR_WHITE, 0.85, apex_angle_deg=20.0
-        )
+        # iss_prev_position = {"longitude": str(cx - 1.0), "latitude": str(cy)}
+        # light_up_iss_tri_rings(
+        #     cx, cy,
+        #     airports_data, pixels, current_led_colors,
+        #     COLOR_WHITE, 0.85, apex_angle_deg=20.0
+        # )
+        light_up_iss_rings(cx, cy, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
         played = True
 
     iss_animated = played
