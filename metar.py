@@ -736,8 +736,8 @@ while looplimit > 0:
                 if VERBOSE:
                     print("ISS lat lon:", iss_y, iss_x)
                 # for testing the triangular ISS animation:
-                # iss_x, iss_y = -81.593056, 38.375833
-                # iss_prev_position = {"longitude": str(iss_x - 1.0), "latitude": str(iss_y)}
+                iss_x, iss_y = -81.593056, 38.375833
+                iss_prev_position = {"longitude": str(iss_x - 1.0), "latitude": str(iss_y)}
                 light_up_iss_tri_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85, apex_angle_deg=30.0)
                 # light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
                 iss_animated = True
