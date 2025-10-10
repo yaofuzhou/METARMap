@@ -740,7 +740,7 @@ while looplimit > 0:
                 light_up_iss_tri_rings(
                     real_x, real_y,
                     airports_data, pixels, current_led_colors,
-                    COLOR_WHITE, 0.85, apex_angle_deg=30.0
+                    COLOR_WHITE, 0.85, apex_angle_deg=20.0
                 )
                 played = True
         except Exception as e:
@@ -755,7 +755,7 @@ while looplimit > 0:
         light_up_iss_tri_rings(
             cx, cy,
             airports_data, pixels, current_led_colors,
-            COLOR_WHITE, 0.85, apex_angle_deg=30.0
+            COLOR_WHITE, 0.85, apex_angle_deg=20.0
         )
         played = True
 
