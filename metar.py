@@ -108,6 +108,7 @@ OFFSET_LEGEND_BY = 0
 
 # ----- ISS Animation optimization -----
 ISS_MAX_RING_RADIUS = 11  # Largest ring radius from the animation
+TEST_ISS_ANIMATION = True
 
 # ---------------------------------------------------------------------------
 # ------------END OF CONFIGURATION-------------------------------------------
@@ -726,24 +727,39 @@ while looplimit > 0:
 
     iss_anim_start = time.time()
     iss_animated = False
+    played = False
+
+    # Try real ISS first
     if iss_position:
         try:
-            iss_x = float(iss_position['longitude'])
-            iss_y = float(iss_position['latitude'])
-            
-            # Only animate ISS if it's within the extended map coverage area
-            if map_min_lat <= iss_y <= map_max_lat and map_min_lon <= iss_x <= map_max_lon:
+            real_x = float(iss_position['longitude'])
+            real_y = float(iss_position['latitude'])
+            if map_min_lat <= real_y <= map_max_lat and map_min_lon <= real_x <= map_max_lon:
                 if VERBOSE:
-                    print("ISS lat lon:", iss_y, iss_x)
-                # for testing the triangular ISS animation:
-                iss_x, iss_y = -81.593056, 38.375833
-                iss_prev_position = {"longitude": str(iss_x - 1.0), "latitude": str(iss_y)}
-                light_up_iss_tri_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85, apex_angle_deg=30.0)
-                # light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
-                iss_animated = True
+                    print("ISS lat lon:", real_y, real_x)
+                light_up_iss_tri_rings(
+                    real_x, real_y,
+                    airports_data, pixels, current_led_colors,
+                    COLOR_WHITE, 0.85, apex_angle_deg=30.0
+                )
+                played = True
         except Exception as e:
             if VERBOSE:
                 print(f"Error in ISS animation: {e}")
+
+    # Fallback test animation (runs if no real ISS played)
+    if TEST_ISS_ANIMATION and not played:
+        cx, cy = -81.593056, 38.375833
+        # Provide a fake previous position so the triangle has a direction
+        iss_prev_position = {"longitude": str(cx - 1.0), "latitude": str(cy)}
+        light_up_iss_tri_rings(
+            cx, cy,
+            airports_data, pixels, current_led_colors,
+            COLOR_WHITE, 0.85, apex_angle_deg=30.0
+        )
+        played = True
+
+    iss_animated = played
     t_iss_anim = time.time() - iss_anim_start
 
     holiday_start = time.time()
