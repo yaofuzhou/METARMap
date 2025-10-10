@@ -168,6 +168,7 @@ if astral is not None and USE_SUNRISE_SUNSET:
 # Global state for ISS overlay
 last_iss_update_time = datetime.min
 iss_position = None
+iss_prev_position = None
 
 def get_iss_location():
     url = "http://api.open-notify.org/iss-now.json"
@@ -192,13 +193,6 @@ def should_update_iss_position():
 def calculate_euclidean_distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1)**2 + (y2 - y1)**2)
 
-def _draw_ring_frame(center_x, center_y, inner_rad, outer_rad, color, airports_data, pixels, current_led_colors):
-    """Draw one ring frame just like ISS logic: set LEDs within [inner_rad, outer_rad)."""
-    for i, airport in enumerate(airports_data[:LED_COUNT]):
-        ax, ay = airport['lon'], airport['lat']
-        d = calculate_euclidean_distance(center_x, center_y, ax, ay)
-        pixels[i] = color if (inner_rad <= d < outer_rad) else current_led_colors[i]
-
 # ISS ripple (blocking, as before)
 def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, ring_color, dimming_factor):
     radii = [(0, 1), (0.5, 1.5), (1, 2), (1.5, 2.5), (2, 3), (2.5, 3.5), (3, 4), (3.5, 4.5), (4, 5), (4.5, 5.5), (5, 6), (5.5, 6.5), (6, 7), (6.5, 7.5), (7, 8), (7.5, 8.5)]
@@ -215,6 +209,117 @@ def light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, 
                 pixels[i] = current_led_colors[i]
         pixels.show()
         sleep(ISS_ANIMATION_SPEED)
+
+def light_up_iss_tri_rings(iss_x, iss_y, airports_data, pixels, current_led_colors,
+                           ring_color, dimming_factor, apex_angle_deg=30.0):
+    """
+    Expanding *triangular* rings (similar-triangle bands) centered at ISS centroid (current location),
+    pointing toward the ISS motion direction (last -> current). The triangle is isosceles with a sharp apex.
+
+    Geometry (local frame):
+      - Unit vector v: motion direction (last -> current). n: v rotated 90 deg CCW.
+      - Triangle vertices (centroid at origin) at scale s:
+            P0 =  a*s * v
+            P1 = (-b*s) * v + ( t*s) * n
+            P2 = (-b*s) * v - ( t*s) * n
+        with a = 2b to put centroid at current location.
+        Let φ = apex_angle_deg/2. Choose b = 1 (unit), a = 2, t = 3 * tan(φ).
+      - Point (airport) in local coords r = u*v + w*n is inside triangle of scale s iff:
+            u >= -s*b
+            w <= -k*u + k*(s*a)
+            w >=  k*u - k*(s*a)
+        where k = t/(a+b) (constant, scale-invariant).
+
+    We animate bands between scales [s_in, s_out] like circular radii.
+    """
+    # 1) Direction unit vectors v (forward) and n (perp)
+    # If we don't have a previous ISS position yet, pick a stable default (east).
+    if iss_prev_position is not None:
+        try:
+            lx = float(iss_prev_position['longitude'])
+            ly = float(iss_prev_position['latitude'])
+            dx = iss_x - lx
+            dy = iss_y - ly
+            norm = math.hypot(dx, dy)
+            if norm < 1e-6:
+                v = (1.0, 0.0)  # degenerate move; point east
+            else:
+                v = (dx / norm, dy / norm)
+        except Exception:
+            v = (1.0, 0.0)
+    else:
+        v = (1.0, 0.0)
+
+    # n is v rotated 90 deg CCW
+    n = (-v[1], v[0])
+
+    # 2) Triangle shape parameters
+    phi = math.radians(apex_angle_deg * 0.5)  # half-apex angle
+    b = 1.0
+    a = 2.0 * b     # ensures centroid at current location
+    t = 3.0 * math.tan(phi)
+    k = t / (a + b)  # slope factor in the inequalities
+
+    # 3) Band "scales" (analogous to ring radii). Tune or match your old frames.
+    # Using the same count as your circular ripple for visual parity.
+    scales = [
+    (0.0, 0.6667),
+    (0.3333, 1.0),
+    (0.6667, 1.3333),
+    (1.0, 2.0),
+    (1.3333, 2.0),
+    (1.6667, 2.3333),
+    (2.0, 2.6667),
+    (2.3333, 3.0),
+    (2.6667, 3.3333),
+    (3.0, 3.6667),
+    (3.3333, 4.0),
+    (3.6667, 4.3333),
+    (4.0, 4.6667),
+    (4.3333, 5.0),
+    (4.6667, 5.3333),
+    (5.0, 5.6667),
+    (5.3333, 6.0),
+    (5.6667, 6.3333),
+    (6.0, 6.6667),
+    (6.3333, 7.0),
+    (6.6667, 7.3333)
+]
+
+    # 4) Local-projection helper (world -> (u,w))
+    def to_local(px, py):
+        dx = px - iss_x
+        dy = py - iss_y
+        # project onto (v, n)
+        u = dx * v[0] + dy * v[1]
+        w = dx * n[0] + dy * n[1]
+        return u, w
+
+    # 5) Inclusion test for a triangle of scale s
+    def inside_triangle(u, w, s):
+        return (u >= -s*b) and (w <= -k*u + k*(s*a)) and (w >= k*u - k*(s*a))
+
+    # 6) Animate expanding triangular bands
+    for frame_idx, (s_in, s_out) in enumerate(scales):
+        scaled_color = tuple(int(component * (dimming_factor ** frame_idx)) for component in ring_color)
+
+        for i, airport in enumerate(airports_data):
+            if i >= LED_COUNT:
+                break
+            ax, ay = airport['lon'], airport['lat']
+
+            u, w = to_local(ax, ay)
+            # In band if inside outer triangle but not inside inner triangle
+            in_outer = inside_triangle(u, w, s_out)
+            in_inner = inside_triangle(u, w, s_in)
+            if in_outer and not in_inner:
+                pixels[i] = scaled_color
+            else:
+                pixels[i] = current_led_colors[i]
+
+        pixels.show()
+        sleep(ISS_ANIMATION_SPEED)
+
 
 # -------------------------
 # Boot Splash (fixed center ripple)
@@ -613,9 +718,10 @@ while looplimit > 0:
     iss_check_start = time.time()
     if should_update_iss_position():
         new_position = get_iss_location()
-        if new_position is not None:  # Only update if we got valid data
+        if new_position is not None:
+            # keep previous before overwriting
+            iss_prev_position = iss_position
             iss_position = new_position
-
     t_iss_check = time.time() - iss_check_start
 
     iss_anim_start = time.time()
@@ -629,7 +735,8 @@ while looplimit > 0:
             if map_min_lat <= iss_y <= map_max_lat and map_min_lon <= iss_x <= map_max_lon:
                 if VERBOSE:
                     print("ISS lat lon:", iss_y, iss_x)
-                light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
+                # light_up_iss_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85)
+                light_up_iss_tri_rings(iss_x, iss_y, airports_data, pixels, current_led_colors, COLOR_WHITE, 0.85, apex_angle_deg=30.0)
                 iss_animated = True
         except Exception as e:
             if VERBOSE:
