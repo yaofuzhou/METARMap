@@ -517,20 +517,7 @@ for metar in root.iter('METAR'):
         skyConditions.append(skyCond)
 
     rawText = metar.find('raw_text').text if metar.find('raw_text') is not None else ""
-    obs = metar.find('wx_string').text or ""
-
-    # Determine lightning from structured wx_string first; fall back to raw_text tokens.
-    if 'TSNO' in rawText:
-        lightning = False
-    elif obs:
-        # wx_string contains present-weather groups like TSRA, VCTS, -TSRA, etc.
-        wx_tokens = obs.split()
-        lightning = any(t.startswith(('TS', 'VCTS')) for t in wx_tokens)
-    else:
-        # Fallback: look for proper weather tokens in raw_text (avoid matching station codes like KTTS)
-        # Matches VCTS or [-+]?TS followed by up to 3 weather letters (RA, GR, SH, etc.), as a whole token.
-        lightning = bool(re.search(r'\b(?:VCTS|[-+]?TS[A-Z]{0,3})\b', rawText))
-
+    lightning = False if ((rawText.find('LTG', 4) == -1 and rawText.find('TS', 4) == -1) or rawText.find('TSNO', 4) != -1) else True
 
     if VERBOSE:
         print(stationId + ":" 
