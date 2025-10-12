@@ -440,6 +440,66 @@ root = ET.fromstring(content)
 conditionDict = {}
 stationList = []
 
+
+# Precompiled patterns
+_RE_TSN0       = re.compile(r'\bTSNO\b')
+_RE_TS_GROUP   = re.compile(r'^(?:VC)?TS(?:[A-Z]{2})*$')   # TS, VCTS, TSRA, TSGR, ...
+_RE_LTG_TOKEN  = re.compile(r'\bLTG\b')
+_RE_LTG_PHRASE = re.compile(r'\bLTG(?:G|IC|CC|CG|DSNT|ALQDS|[A-Z]+)?\b')
+
+def _split_metar_sections(raw_text):
+    """
+    Split a METAR into (body_tokens, rmk_tokens), skipping report type, station,
+    AUTO/COR, and time - so station code (e.g., KTTS) never contaminates matches.
+    """
+    if not raw_text:
+        return [], []
+    tokens = raw_text.strip().split()
+
+    i = 0
+    if i < len(tokens) and tokens[i] in ("METAR", "SPECI"):
+        i += 1
+    if i < len(tokens) and tokens[i] == "COR":
+        i += 1
+    if i < len(tokens):  # skip station
+        i += 1
+    while i < len(tokens) and tokens[i] in ("AUTO", "SPECI", "COR", "NIL"):
+        i += 1
+    if i < len(tokens) and tokens[i].endswith("Z"):  # time
+        i += 1
+
+    try:
+        rmk_idx = tokens.index("RMK", i)
+    except ValueError:
+        rmk_idx = len(tokens)
+
+    body = tokens[i:rmk_idx]
+    rmk  = tokens[rmk_idx+1:] if rmk_idx < len(tokens) else []
+    return body, rmk
+
+def detect_lightning_activity(raw_text):
+    """
+    Combined 'storm/lightning' signal for your existing interface.
+
+    Returns True if:
+      - TSNO is NOT present, AND
+      - EITHER body contains TS-group token (TS, VCTS, TSRA, ...) OR
+        remarks contain LTG (any common variant).
+    """
+    if not raw_text:
+        return False
+    if _RE_TSN0.search(raw_text):
+        return False
+
+    body, rmk = _split_metar_sections(raw_text)
+
+    thunder = any(_RE_TS_GROUP.match(tok) for tok in body) or any(tok == "VCTS" for tok in body)
+    rmk_str = " ".join(rmk)
+    lightning = bool(_RE_LTG_TOKEN.search(rmk_str) or _RE_LTG_PHRASE.search(rmk_str))
+
+    return thunder or lightning
+
+
 for metar in root.iter('METAR'):
     stationId = metar.find('station_id').text if metar.find('station_id') is not None else None
     if not stationId:
@@ -517,7 +577,9 @@ for metar in root.iter('METAR'):
         skyConditions.append(skyCond)
 
     rawText = metar.find('raw_text').text if metar.find('raw_text') is not None else ""
-    lightning = False if ((rawText.find('LTG', 4) == -1 and rawText.find('TS', 4) == -1) or rawText.find('TSNO', 4) != -1) else True
+    # lightning = False if ((rawText.find('LTG', 4) == -1 and rawText.find('TS', 4) == -1) or rawText.find('TSNO', 4) != -1) else True
+    lightning = detect_lightning_activity(rawText)
+
 
     if VERBOSE:
         print(stationId + ":" 
